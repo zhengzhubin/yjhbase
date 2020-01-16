@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2d50100e-7496-4796-9e17-47062a9963e9" name="Default Changelist" comment="small test">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/compactions/YjCompactionPolicy.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/coprocessor/HSimpleAuthObserver.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjhbase-server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/yjhbase-server/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/compactions/YjCompactionPolicy.java" beforeDir="false" afterPath="$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/compactions/YjCompactionPolicy.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
@@ -21,10 +19,10 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/compactions/YjCompactionPolicy.java">
+        <entry file="file://$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/coprocessor/HSimpleAuthObserver.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="271">
-              <caret line="17" column="34" selection-start-line="17" selection-start-column="34" selection-end-line="17" selection-end-column="34" />
+            <state relative-caret-position="196">
+              <caret line="108" column="63" selection-start-line="108" selection-start-column="63" selection-end-line="108" selection-end-column="63" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -33,10 +31,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/regionserver/compactions/ExploringCompactionPolicy.java">
+        <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/coprocessor/MasterObserver.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-80">
-              <caret line="56" column="34" selection-start-line="56" selection-start-column="14" selection-end-line="56" selection-end-column="34" />
+            <state relative-caret-position="103">
+              <caret line="1318" column="15" selection-start-line="1318" selection-start-column="15" selection-end-line="1318" selection-end-column="15" />
             </state>
           </provider>
         </entry>
@@ -64,6 +62,7 @@
         <option value="$PROJECT_DIR$/yjhbase-server/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/compactions/YjCompactionPolicy.java" />
+        <option value="$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/coprocessor/HSimpleAuthObserver.java" />
       </list>
     </option>
   </component>
@@ -141,7 +140,57 @@
               <item name="yjhbase" type="462c0819:PsiDirectoryNode" />
               <item name="yjhbase-server" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="test" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="yjhbase" type="462c0819:PsiDirectoryNode" />
+              <item name="yjhbase-server" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+              <item name="hbase" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="yjhbase" type="462c0819:PsiDirectoryNode" />
+              <item name="yjhbase-server" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+              <item name="hbase" type="462c0819:PsiDirectoryNode" />
+              <item name="compactions" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+              <item name="Maven: org.apache.hbase:hbase-server:2.1.7" type="70bed36:NamedLibraryElementNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+              <item name="Maven: org.apache.hbase:hbase-server:2.1.7" type="70bed36:NamedLibraryElementNode" />
+              <item name="hbase-server-2.1.7.jar" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+              <item name="Maven: org.apache.hbase:hbase-server:2.1.7" type="70bed36:NamedLibraryElementNode" />
+              <item name="hbase-server-2.1.7.jar" type="462c0819:PsiDirectoryNode" />
+              <item name="hbase" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="yjhbase" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+              <item name="Maven: org.apache.hbase:hbase-server:2.1.7" type="70bed36:NamedLibraryElementNode" />
+              <item name="hbase-server-2.1.7.jar" type="462c0819:PsiDirectoryNode" />
+              <item name="hbase" type="462c0819:PsiDirectoryNode" />
+              <item name="coprocessor" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -152,7 +201,7 @@
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1579167061992" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1579174582442" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
@@ -185,18 +234,18 @@
       <option name="presentableId" value="Default" />
       <updated>1578885001235</updated>
       <workItem from="1578885004432" duration="930000" />
-      <workItem from="1579159251096" duration="7178000" />
+      <workItem from="1579159251096" duration="12705000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="8108000" />
+    <option name="totallyTimeSpent" value="13635000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1295" height="695" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" weight="0.24656427" />
+      <window_info content_ui="combo" id="Project" order="0" weight="0.27728376" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Designer" order="2" />
       <window_info id="Image Layers" order="3" />
@@ -230,7 +279,7 @@
       <window_info anchor="right" id="Theme Preview" order="8" />
     </layout>
     <layout-to-restore>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24656427" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.27728376" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Designer" order="2" />
       <window_info id="Image Layers" order="3" />
@@ -335,10 +384,84 @@
         </state>
       </provider>
     </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/coprocessor/BaseEnvironment.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="178">
+          <caret line="35" column="13" selection-start-line="35" selection-start-column="13" selection-end-line="35" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-client/2.1.7/hbase-client-2.1.7.jar!/org/apache/hadoop/hbase/Coprocessor.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="243">
+          <caret line="35" column="17" lean-forward="true" selection-start-line="35" selection-start-column="17" selection-end-line="35" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/coprocessor/MasterCoprocessor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="200">
+          <caret line="29" column="54" selection-start-line="29" selection-start-column="43" selection-end-line="29" selection-end-column="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/security/access/AccessController.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="603">
+          <caret line="174" column="63" selection-start-line="174" selection-start-column="57" selection-end-line="174" selection-end-column="63" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/compactions/YjCompactionPolicy.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="271">
-          <caret line="17" column="34" selection-start-line="17" selection-start-column="34" selection-end-line="17" selection-end-column="34" />
+        <state relative-caret-position="-2979">
+          <caret line="7" column="48" selection-start-line="7" selection-start-column="48" selection-end-line="7" selection-end-column="48" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/ipc/RpcCallContext.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="178">
+          <caret line="67" column="14" selection-start-line="67" selection-start-column="14" selection-end-line="67" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/ipc/RpcCall.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="178">
+          <caret line="38" column="17" selection-start-line="38" selection-start-column="17" selection-end-line="38" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/ipc/RpcServer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="178">
+          <caret line="765" column="23" selection-start-line="765" selection-start-column="23" selection-end-line="765" selection-end-column="23" />
+          <folding>
+            <element signature="e#31563#31564#0" expanded="true" />
+            <element signature="e#31627#31628#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://C:/Program Files/Java/jdk1.8.0_221/src.zip!/java/util/Optional.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-522">
+          <caret line="66" column="20" selection-start-line="66" selection-start-column="12" selection-end-line="66" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/../../maven_3_5_4/repository/org/apache/hbase/hbase-server/2.1.7/hbase-server-2.1.7-sources.jar!/org/apache/hadoop/hbase/coprocessor/MasterObserver.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="103">
+          <caret line="1318" column="15" selection-start-line="1318" selection-start-column="15" selection-end-line="1318" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/yjhbase-server/src/main/java/org/apache/hadoop/hbase/coprocessor/HSimpleAuthObserver.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="196">
+          <caret line="108" column="63" selection-start-line="108" selection-start-column="63" selection-end-line="108" selection-end-column="63" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

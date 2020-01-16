@@ -1,11 +1,11 @@
 package org.apache.hadoop.hbase.regionserver.compactions;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.regionserver.HStoreFile;
 import org.apache.hadoop.hbase.regionserver.StoreConfigInformation;
 import org.apache.hadoop.hbase.util.FSHDFSUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +19,7 @@ import java.util.List;
  **/
 public class YjCompactionPolicy extends ExploringCompactionPolicy{
 
-    private static final Logger LOG = LoggerFactory.getLogger(YjCompactionPolicy.class);
+    private static final Log LOG = LogFactory.getLog(YjCompactionPolicy.class);
 
     /**
      * Constructor for ExploringCompactionPolicy.
