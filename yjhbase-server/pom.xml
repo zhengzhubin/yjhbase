@@ -12,6 +12,55 @@
     <artifactId>yjhbase-server</artifactId>
 
     <dependencies>
+        <!-- -->
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>2.1.8</version>
+            <scope>system</scope>
+            <systemPath>d:/tools/maven_3_5_4/outlibs/hbase/hbase-server-2.1.8.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>2.1.7</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase.thirdparty</groupId>
+            <artifactId>hbase-shaded-protobuf</artifactId>
+            <version>2.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-protocol-shaded</artifactId>
+            <version>2.1.8</version>
+            <scope>provided</scope>
+            <systemPath>d:/tools/maven_3_5_4/outlibs/hbase/hbase-protocol-shaded-2.1.8.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-zookeeper</artifactId>
+            <version>2.1.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-http</artifactId>
+            <version>2.1.7</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.jackson</groupId>
+                    <artifactId>jackson-core-asl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <!--
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
@@ -23,6 +72,9 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
+
+
     </dependencies>
 
 
