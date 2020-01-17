@@ -12,13 +12,14 @@ import org.apache.hadoop.hbase.ipc.RpcServer;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Optional;
 
 /**
  * @author zhengzhubin
  * @date 2020/1/16
  * @description：hbase基础权限认证协处理器
  **/
-public class HSimpleAuthObserver implements MasterObserver{
+public class HSimpleAuthObserver implements MasterObserver, MasterCoprocessor{
 
     private static final Log LOG = LogFactory.getLog(HSimpleAuthObserver.class);
     private static final String HBASE_AUTH_USER_ADMIN = "yjhbase.auth.user.admin";
@@ -30,6 +31,11 @@ public class HSimpleAuthObserver implements MasterObserver{
         } catch(Exception e) {
             LOG.error("load server local address failed.", e);
         }
+    }
+
+    @Override
+    public Optional<MasterObserver> getMasterObserver() {
+        return Optional.of(this);
     }
 
     /**
@@ -58,7 +64,7 @@ public class HSimpleAuthObserver implements MasterObserver{
             final ObserverContext<MasterCoprocessorEnvironment> ctx, TableDescriptor desc, RegionInfo[] regions)
             throws IOException {
         if(desc.isMetaTable()) return;
-        String requestInfo = "create htable: "+ desc.getTableName().getNameAsString();
+        String requestInfo = "create htable "+ desc.getTableName().getNameAsString();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -66,7 +72,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preDeleteTable(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, TableName tableName)
             throws IOException {
-        String requestInfo = "drop htable: "+ tableName.getNameAsString();
+        String requestInfo = "drop htable "+ tableName.getNameAsString();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -74,7 +80,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preTruncateTable(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, TableName tableName)
             throws IOException {
-        String requestInfo = "truncate htable: "+ tableName.getNameAsString();
+        String requestInfo = "truncate htable "+ tableName.getNameAsString();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -82,7 +88,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preModifyTable(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, final TableName tableName, TableDescriptor newDescriptor)
             throws IOException {
-        String requestInfo = "modify htable: "+ tableName.getNameAsString();
+        String requestInfo = "modify htable "+ tableName.getNameAsString();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -90,7 +96,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preEnableTable(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, final TableName tableName)
             throws IOException {
-        String requestInfo = "enable htable: "+ tableName.getNameAsString();
+        String requestInfo = "enable htable "+ tableName.getNameAsString();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -98,7 +104,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preDisableTable(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, final TableName tableName)
             throws IOException {
-        String requestInfo = "disable htable: "+ tableName.getNameAsString();
+        String requestInfo = "disable htable "+ tableName.getNameAsString();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -106,7 +112,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preCreateNamespace(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, NamespaceDescriptor ns)
             throws IOException {
-        String requestInfo = "create namespace: "+ ns.getName();
+        String requestInfo = "create namespace "+ ns.getName();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -114,7 +120,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preDeleteNamespace(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, String namespace)
             throws IOException {
-        String requestInfo = "drop namespace: "+ namespace;
+        String requestInfo = "drop namespace "+ namespace;
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 
@@ -122,7 +128,7 @@ public class HSimpleAuthObserver implements MasterObserver{
     public void preModifyNamespace(
             final ObserverContext<MasterCoprocessorEnvironment> ctx, NamespaceDescriptor newNsDescriptor)
             throws IOException {
-        String requestInfo = "modify namespace: "+ newNsDescriptor.getName();
+        String requestInfo = "modify namespace "+ newNsDescriptor.getName();
         this.isValidUser(ctx.getEnvironment().getConfiguration() , requestInfo);
     }
 

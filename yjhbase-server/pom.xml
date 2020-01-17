@@ -27,7 +27,7 @@
 
 
     <build>
-        <finalName>yjhbase-server</finalName>
+        <finalName>yjhbase-server-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
