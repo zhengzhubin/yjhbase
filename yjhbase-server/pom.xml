@@ -17,8 +17,11 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
             <version>2.1.8</version>
+            <!--
+            将本地jar包打包至本地maven库：mvn install:install-file -Dfile=hbase-server-2.1.8.jar -DgroupId=org.apache.hbase -DartifactId=hbase-server -Dversion=2.1.8 -Dpackaging=jar
             <scope>system</scope>
             <systemPath>d:/tools/maven_3_5_4/outlibs/hbase/hbase-server-2.1.8.jar</systemPath>
+            -->
         </dependency>
 
         <dependency>
@@ -38,7 +41,7 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-protocol-shaded</artifactId>
             <version>2.1.8</version>
-            <scope>provided</scope>
+            <scope>system</scope>
             <systemPath>d:/tools/maven_3_5_4/outlibs/hbase/hbase-protocol-shaded-2.1.8.jar</systemPath>
         </dependency>
         <dependency>

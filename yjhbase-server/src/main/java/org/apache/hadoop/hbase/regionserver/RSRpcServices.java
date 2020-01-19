@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hbase.regionserver;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -200,6 +201,8 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
    * The minimum allowable delta to use for the scan limit
    */
   private final long minimumScanTimeLimitDelta;
+
+  private final long minRequestSize_ = 2L * 1024 * 1024;
 
   /**
    * Row size threshold for multi requests above which a warning is logged
@@ -650,7 +653,8 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
     // doNonAtomicBatchOp call.  We should be staying aligned though the Put and Delete are
     // deferred/batched
     List<Action> mutations = null;
-    long maxQuotaResultSize = Math.min(maxScannerResultSize, quota.getReadAvailable());
+    long maxQuotaResultSize =
+            Math.max(Math.min(maxScannerResultSize, quota.getReadAvailable()), minRequestSize_);
     IOException sizeIOE = null;
     Object lastBlock = null;
     ClientProtos.ResultOrException.Builder resultOrExceptionBuilder = ResultOrException.newBuilder();
@@ -2350,8 +2354,8 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       Boolean existence = null;
       Result r = null;
       RpcCallContext context = RpcServer.getCurrentCall().orElse(null);
-      quota = getRpcQuotaManager().checkQuota(region, OperationQuota.OperationType.GET);
-
+      quota = this.getQuotaInfo(region, OperationQuota.OperationType.GET);
+//              getRpcQuotaManager().checkQuota(region, OperationQuota.OperationType.GET);
       Get clientGet = ProtobufUtil.toGet(get);
       if (get.getExistenceOnly() && region.getCoprocessorHost() != null) {
         existence = region.getCoprocessorHost().preExists(clientGet);
@@ -2394,6 +2398,15 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       }
       return builder.build();
     } catch (IOException ie) {
+      if(ie instanceof RpcThrottlingException) {
+        boolean canRequestRequeue =
+                this.canRequestRequeueOnQuotaLimit(region, "GetRequest");
+        if(canRequestRequeue) {
+          QuotaRequeueException rqe =
+                  new QuotaRequeueException("ScanRequest Quota exceed on table: " + region.getTableDescriptor().getTableName().getNameAsString());
+          throw new ServiceException(rqe);
+        }
+      }
       throw new ServiceException(ie);
     } finally {
       MetricsRegionServer mrs = regionServer.metricsRegionServer;
@@ -2490,6 +2503,30 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       throw new ServiceException(ie);
     }
 
+    List<Pair<RegionAction ,Object>> regionsPair = new ArrayList<>();
+    HRegion curRegion = null;
+    for(RegionAction regionAction : request.getRegionActionList()) {
+      try{
+        HRegion region = getRegion(regionAction.getRegion());
+        curRegion = region;
+        OperationQuota quota = this.getQuotaInfo(region , regionAction.getActionList());
+        Pair<HRegion ,OperationQuota> regionPair = new Pair<>(region , quota);
+        regionsPair.add(new Pair<RegionAction, Object>(regionAction , regionPair));
+      }catch (IOException e) {
+        if(e instanceof RpcThrottlingException) {
+          boolean canRequestRequeue =
+                  this.canRequestRequeueOnQuotaLimit(curRegion, "MultiRequest");
+          if(canRequestRequeue) {
+            QuotaRequeueException rqe =
+                    new QuotaRequeueException("MultiRequest Quota exceed on table: " + curRegion.getTableDescriptor().getTableName().getNameAsString());
+            throw new ServiceException(rqe);
+          }
+        } else {
+          regionsPair.add(new Pair<>(regionAction, e));
+        }
+      }
+    }
+
     checkBatchSizeAndLogLargeSize(request);
 
     // rpc controller is how we bring in data via the back door;  it is unprotobuf'ed data.
@@ -2511,20 +2548,15 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
     RpcCallContext context = RpcServer.getCurrentCall().orElse(null);
     this.rpcMultiRequestCount.increment();
     this.requestCount.increment();
-    Map<RegionSpecifier, ClientProtos.RegionLoadStats> regionStats = new HashMap<>(request
-      .getRegionActionCount());
+    Map<RegionSpecifier, ClientProtos.RegionLoadStats> regionStats = new HashMap<>(request.getRegionActionCount());
     ActivePolicyEnforcement spaceQuotaEnforcement = getSpaceQuotaManager().getActiveEnforcements();
-    for (RegionAction regionAction : request.getRegionActionList()) {
-      OperationQuota quota;
-      HRegion region;
+
+    for(Pair<RegionAction, Object> pair : regionsPair) {
+      RegionAction regionAction = pair.getFirst();
       regionActionResultBuilder.clear();
-      RegionSpecifier regionSpecifier = regionAction.getRegion();
-      try {
-        region = getRegion(regionSpecifier);
-        quota = getRpcQuotaManager().checkQuota(region, regionAction.getActionList());
-      } catch (IOException e) {
-        rpcServer.getMetrics().exception(e);
-        regionActionResultBuilder.setException(ResponseConverter.buildException(e));
+      if(pair.getSecond() instanceof IOException) {
+        rpcServer.getMetrics().exception((IOException) pair.getSecond());
+        regionActionResultBuilder.setException(ResponseConverter.buildException((IOException) pair.getSecond()));
         responseBuilder.addRegionActionResult(regionActionResultBuilder.build());
         // All Mutations in this RegionAction not executed as we can not see the Region online here
         // in this RS. Will be retried from Client. Skipping all the Cells in CellScanner
@@ -2532,7 +2564,9 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
         skipCellsForMutations(regionAction.getActionList(), cellScanner);
         continue;  // For this region it's a failure.
       }
-
+      Pair<HRegion ,OperationQuota> regionPair = (Pair<HRegion, OperationQuota>) pair.getSecond();
+      HRegion region = regionPair.getFirst();
+      OperationQuota quota = regionPair.getSecond();
       if (regionAction.hasAtomic() && regionAction.getAtomic()) {
         // How does this call happen?  It may need some work to play well w/ the surroundings.
         // Need to return an item per Action along w/ Action index.  TODO.
@@ -2543,19 +2577,19 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
             byte[] family = condition.getFamily().toByteArray();
             byte[] qualifier = condition.getQualifier().toByteArray();
             CompareOperator op =
-              CompareOperator.valueOf(condition.getCompareType().name());
+                    CompareOperator.valueOf(condition.getCompareType().name());
             ByteArrayComparable comparator =
-                ProtobufUtil.toComparator(condition.getComparator());
+                    ProtobufUtil.toComparator(condition.getComparator());
             TimeRange timeRange = condition.hasTimeRange() ?
-              ProtobufUtil.toTimeRange(condition.getTimeRange()) :
-              TimeRange.allTime();
+                    ProtobufUtil.toTimeRange(condition.getTimeRange()) :
+                    TimeRange.allTime();
             processed =
-              checkAndRowMutate(region, regionAction.getActionList(), cellScanner, row, family,
-                qualifier, op, comparator, timeRange, regionActionResultBuilder,
-                spaceQuotaEnforcement);
+                    checkAndRowMutate(region, regionAction.getActionList(), cellScanner, row, family,
+                            qualifier, op, comparator, timeRange, regionActionResultBuilder,
+                            spaceQuotaEnforcement);
           } else {
             doAtomicBatchOp(regionActionResultBuilder, region, quota, regionAction.getActionList(),
-              cellScanner, spaceQuotaEnforcement);
+                    cellScanner, spaceQuotaEnforcement);
             processed = Boolean.TRUE;
           }
         } catch (IOException e) {
@@ -2573,16 +2607,17 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
           context.setCallBack(closeCallBack);
         }
         cellsToReturn = doNonAtomicRegionMutation(region, quota, regionAction, cellScanner,
-            regionActionResultBuilder, cellsToReturn, nonceGroup, closeCallBack, context,
-            spaceQuotaEnforcement);
+                regionActionResultBuilder, cellsToReturn, nonceGroup, closeCallBack, context,
+                spaceQuotaEnforcement);
       }
       responseBuilder.addRegionActionResult(regionActionResultBuilder.build());
       quota.close();
       ClientProtos.RegionLoadStats regionLoadStats = region.getLoadStatistics();
       if(regionLoadStats != null) {
-        regionStats.put(regionSpecifier, regionLoadStats);
+        regionStats.put(regionAction.getRegion(), regionLoadStats);
       }
     }
+
     // Load the controller with the Cells to return.
     if (cellsToReturn != null && !cellsToReturn.isEmpty() && controller != null) {
       controller.setCellScanner(CellUtil.createCellScanner(cellsToReturn));
@@ -2669,7 +2704,7 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       Boolean processed = null;
       type = mutation.getMutateType();
 
-      quota = getRpcQuotaManager().checkQuota(region, OperationQuota.OperationType.MUTATE);
+      quota = this.getQuotaInfo(region, OperationQuota.OperationType.MUTATE);
       spaceQuotaEnforcement = getSpaceQuotaManager().getActiveEnforcements();
 
       switch (type) {
@@ -2763,6 +2798,15 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       return builder.build();
     } catch (IOException ie) {
       regionServer.checkFileSystem();
+      if(ie instanceof RpcThrottlingException) {
+        boolean canRequestRequeue =
+                this.canRequestRequeueOnQuotaLimit(region, "MutateRequest");
+        if(canRequestRequeue) {
+          QuotaRequeueException rqe =
+                  new QuotaRequeueException("MutateRequest Quota exceed on table: " + region.getTableDescriptor().getTableName().getNameAsString());
+          throw new ServiceException(rqe);
+        }
+      }
       throw new ServiceException(ie);
     } finally {
       if (quota != null) {
@@ -3220,11 +3264,21 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       }
       return builder.build();
     }
-    OperationQuota quota;
+    OperationQuota quota = null;
     try {
-      quota = getRpcQuotaManager().checkQuota(region, OperationQuota.OperationType.SCAN);
+      quota = this.getQuotaInfo(region, OperationQuota.OperationType.SCAN);
     } catch (IOException e) {
       addScannerLeaseBack(lease);
+
+      if(e instanceof RpcThrottlingException) {
+        boolean canRequestRequeue =
+                this.canRequestRequeueOnQuotaLimit(region, "ScanRequest");
+        if(canRequestRequeue) {
+          QuotaRequeueException rqe =
+                  new QuotaRequeueException("ScanRequest Quota exceed on table: " + region.getTableDescriptor().getTableName().getNameAsString());
+          throw new ServiceException(rqe);
+        }
+      }
       throw new ServiceException(e);
     }
     try {
@@ -3245,7 +3299,8 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
     }
     RpcCallContext context = RpcServer.getCurrentCall().orElse(null);
     // now let's do the real scan.
-    long maxQuotaResultSize = Math.min(maxScannerResultSize, quota.getReadAvailable());
+    long maxQuotaResultSize =
+            Math.max(Math.min(maxScannerResultSize, quota.getReadAvailable()), minRequestSize_);
     RegionScanner scanner = rsh.s;
     // this is the limit of rows for this scan, if we the number of rows reach this value, we will
     // close the scanner.
@@ -3499,6 +3554,64 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
     } catch (IOException e) {
       throw new ServiceException(e);
     }
+  }
+
+  /**
+   * 获取quota信息
+   * @param r
+   * @param actions
+   * @return
+   * @throws IOException
+   */
+  private OperationQuota getQuotaInfo(Region r , List<Action> actions) throws IOException {
+    boolean canSkipQuotaVerify = this.canRequestSkipQuotaVerify();
+    if(canSkipQuotaVerify) {//跳过限流认证
+      return YjQuotaRpcService.getUnlimitedQuota();
+    }else {
+      return this.getRpcQuotaManager().checkQuota(r, actions);
+    }
+  }
+
+  /**
+   * 获取quota信息
+   * @param r
+   * @param operationType
+   * @return
+   * @throws IOException
+   */
+  private OperationQuota getQuotaInfo(Region r , OperationQuota.OperationType operationType) throws IOException {
+    boolean canSkipQuotaVerify = this.canRequestSkipQuotaVerify();
+    if(canSkipQuotaVerify) {//跳过限流认证
+      return YjQuotaRpcService.getUnlimitedQuota();
+    }else {
+      return this.getRpcQuotaManager().checkQuota(r, operationType);
+    }
+  }
+
+  /**
+   * 读写请求能否跳过限流校验
+   * @return
+   */
+  private boolean canRequestSkipQuotaVerify(){
+    //非rpc请求(regionserver 内部调用，操作meta表)时：RpcServer.getCurrentCall() == null
+    if(RpcServer.getCurrentCall() == null) return true;
+    RpcCall curCall = RpcServer.getCurrentCall().get();
+    long callInQueueMillis = YjQuotaRpcService.getCallInQueueMillis(curCall);
+    long pauseLimitInMimllis = YjQuotaRpcService.getPauseLimitInMimllis();
+    return callInQueueMillis > pauseLimitInMimllis;
+  }
+
+  /**
+   * 限流时，是否应该重新排队
+   * @param r
+   * @return
+   */
+  private boolean canRequestRequeueOnQuotaLimit(Region r , String reqType){
+    YjQuotaRpcService.logRequestsOnQuotaLimit(r, reqType);
+    if(StringUtils.isNotBlank(r.getTableDescriptor().getValue(YjQuotaRpcService.HBASE_QUOTA_REQUESTS_REQUEUE_ONFAIL))){
+      return Boolean.parseBoolean(r.getTableDescriptor().getValue(YjQuotaRpcService.HBASE_QUOTA_REQUESTS_REQUEUE_ONFAIL));
+    }
+    return YjQuotaRpcService.requeueOnFail;
   }
 
   @VisibleForTesting

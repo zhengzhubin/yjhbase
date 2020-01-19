@@ -22,6 +22,8 @@ import org.apache.hadoop.hbase.CellScanner;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.exceptions.TimeoutIOException;
 import org.apache.hadoop.hbase.monitoring.MonitoredRPCHandler;
+import org.apache.hadoop.hbase.quotas.QuotaRequeueException;
+import org.apache.hadoop.hbase.quotas.YjQuotaRpcService;
 import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Pair;
@@ -31,6 +33,7 @@ import org.apache.htrace.core.TraceScope;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Optional;
@@ -93,7 +96,15 @@ public class CallRunner {
     this.rpcServer = null;
   }
 
+  /**
+   * 请求重新塞回队列
+   */
+  public void requeue() throws IOException, InterruptedException {
+    this.rpcServer.getScheduler().dispatch(this);
+  }
+
   public void run() {
+    boolean hasQuotaRequeueException = false;
     try {
       if (call.disconnectSince() >= 0) {
         if (RpcServer.LOG.isDebugEnabled()) {
@@ -135,19 +146,15 @@ public class CallRunner {
         RpcServer.LOG.warn("Can not complete this request in time, drop it: " + call);
         return;
       } catch (Throwable e) {
-        if (e instanceof ServerNotRunningYetException) {
-          // If ServerNotRunningYetException, don't spew stack trace.
-          if (RpcServer.LOG.isTraceEnabled()) {
-            RpcServer.LOG.trace(call.toShortString(), e);
-          }
-        } else {
-          // Don't dump full exception.. just String version
-          RpcServer.LOG.debug(call.toShortString() + ", exception=" + e);
-        }
+        RpcServer.LOG.debug(call.toShortString() + ", exception=" + e);
+
         errorThrowable = e;
         error = StringUtils.stringifyException(e);
         if (e instanceof Error) {
           throw (Error)e;
+        }
+        if(e instanceof QuotaRequeueException) {
+          hasQuotaRequeueException = true;
         }
       } finally {
         if (traceScope != null) {
@@ -162,12 +169,18 @@ public class CallRunner {
       // return back the RPC request read BB we can do here. It is done by now.
       call.cleanup();
       // Set the response
-      Message param = resultPair != null ? resultPair.getFirst() : null;
-      CellScanner cells = resultPair != null ? resultPair.getSecond() : null;
-      call.setResponse(param, cells, errorThrowable, error);
-      call.sendResponseIfReady();
-      this.status.markComplete("Sent response");
-      this.status.pause("Waiting for a call");
+      if(!hasQuotaRequeueException) {
+        Message param = resultPair != null ? resultPair.getFirst() : null;
+        CellScanner cells = resultPair != null ? resultPair.getSecond() : null;
+        call.setResponse(param, cells, errorThrowable, error);
+        call.sendResponseIfReady();
+        this.status.markComplete("Sent response");
+        this.status.pause("Waiting for a call");
+      } else{// update by zhengzhubin: input task to executors queues again.
+        this.status.markComplete("Sent response");
+        this.status.pause("Waiting for a call");
+        YjQuotaRpcService.waitForRequeue(this);
+      }
     } catch (OutOfMemoryError e) {
       if (this.rpcServer.getErrorHandler() != null) {
         if (this.rpcServer.getErrorHandler().checkOOME(e)) {
