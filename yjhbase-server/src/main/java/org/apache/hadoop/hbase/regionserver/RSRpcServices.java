@@ -3594,7 +3594,7 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
    */
   private boolean canRequestSkipQuotaVerify(){
     //非rpc请求(regionserver 内部调用，操作meta表)时：RpcServer.getCurrentCall() == null
-    if(RpcServer.getCurrentCall() == null) return true;
+    if(RpcServer.getCurrentCall().orElse(null) == null) return true;
     RpcCall curCall = RpcServer.getCurrentCall().get();
     long callInQueueMillis = YjQuotaRpcService.getCallInQueueMillis(curCall);
     long pauseLimitInMimllis = YjQuotaRpcService.getPauseLimitInMimllis();
