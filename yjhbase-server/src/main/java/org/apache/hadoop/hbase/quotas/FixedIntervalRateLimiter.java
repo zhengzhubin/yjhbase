@@ -29,8 +29,15 @@ public class FixedIntervalRateLimiter extends RateLimiter {
     if (now < nextRefillTime) {
       return 0;
     }
-    nextRefillTime = now + super.getTimeUnitInMillis();
-    return limit;
+
+    if(super.getTimeUnitInMillis() <= YjQuotaRpcService.getPauseLimitInMimllis()){
+      nextRefillTime = now + super.getTimeUnitInMillis();
+      return limit;
+    }else {
+      long numSplits = super.getTimeUnitInMillis() / YjQuotaRpcService.getPauseLimitInMimllis();
+      nextRefillTime = now + super.getTimeUnitInMillis() / numSplits;
+      return limit/numSplits + 1;
+    }
   }
 
   @Override
