@@ -2339,6 +2339,7 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       requestCount.increment();
       rpcGetRequestCount.increment();
       region = getRegion(request.getRegion());
+      quota = this.getQuotaInfo(region, OperationQuota.OperationType.GET);
 
       GetResponse.Builder builder = GetResponse.newBuilder();
       ClientProtos.Get get = request.getGet();
@@ -2354,8 +2355,6 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       Boolean existence = null;
       Result r = null;
       RpcCallContext context = RpcServer.getCurrentCall().orElse(null);
-      quota = this.getQuotaInfo(region, OperationQuota.OperationType.GET);
-//              getRpcQuotaManager().checkQuota(region, OperationQuota.OperationType.GET);
       Get clientGet = ProtobufUtil.toGet(get);
       if (get.getExistenceOnly() && region.getCoprocessorHost() != null) {
         existence = region.getCoprocessorHost().preExists(clientGet);
@@ -2694,6 +2693,11 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       requestCount.increment();
       rpcMutateRequestCount.increment();
       region = getRegion(request.getRegion());
+
+      //限流验证
+      quota = this.getQuotaInfo(region, OperationQuota.OperationType.MUTATE);
+      spaceQuotaEnforcement = getSpaceQuotaManager().getActiveEnforcements();
+
       MutateResponse.Builder builder = MutateResponse.newBuilder();
       MutationProto mutation = request.getMutation();
       if (!region.getRegionInfo().isMetaRegion()) {
@@ -2703,9 +2707,6 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       Result r = null;
       Boolean processed = null;
       type = mutation.getMutateType();
-
-      quota = this.getQuotaInfo(region, OperationQuota.OperationType.MUTATE);
-      spaceQuotaEnforcement = getSpaceQuotaManager().getActiveEnforcements();
 
       switch (type) {
         case APPEND:
