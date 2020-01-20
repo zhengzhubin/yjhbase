@@ -101,6 +101,7 @@ public class CallRunner {
    */
   public void requeue() throws IOException, InterruptedException {
     this.rpcServer.getScheduler().dispatch(this);
+//    RpcServer.LOG.info("requeued ? " + this.rpcServer.getScheduler().dispatch(this));
   }
 
   public void run() {
@@ -201,10 +202,12 @@ public class CallRunner {
       RpcServer.LOG.warn(Thread.currentThread().getName()
           + ": caught: " + StringUtils.stringifyException(e));
     } finally {
-      if (!sucessful) {
-        this.rpcServer.addCallSize(call.getSize() * -1);
+      if(!hasQuotaRequeueException) {
+        if (!sucessful) {
+          this.rpcServer.addCallSize(call.getSize() * -1);
+        }
+        cleanup();
       }
-      cleanup();
     }
   }
 
