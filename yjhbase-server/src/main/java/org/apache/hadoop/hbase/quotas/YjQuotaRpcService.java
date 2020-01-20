@@ -129,7 +129,7 @@ public class YjQuotaRpcService {
                 }
             }
             if(numCalls == 0) return ;
-            YjQuotaRpcService.LOG.warn("there's " + numCalls + " tasks need to be requeued.");
+//            YjQuotaRpcService.LOG.warn("there's " + numCalls + " tasks need to be requeued.");
             for(CallRunner task : tasks_){
                 task.requeue();
             }

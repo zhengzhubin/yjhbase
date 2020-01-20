@@ -2895,9 +2895,9 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
     return rsh;
   }
 
-  private RegionScannerHolder newRegionScanner(ScanRequest request, ScanResponse.Builder builder)
+  private RegionScannerHolder newRegionScanner(HRegion region, ScanRequest request, ScanResponse.Builder builder)
       throws IOException {
-    HRegion region = getRegion(request.getRegion());
+//    HRegion region = getRegion(request.getRegion());
     ClientProtos.Scan protoScan = request.getScan();
     boolean isLoadingCfsOnDemandSet = protoScan.hasLoadColumnFamiliesOnDemand();
     Scan scan = ProtobufUtil.toScan(protoScan);
@@ -3227,14 +3227,23 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
     rpcScanRequestCount.increment();
     RegionScannerHolder rsh;
     ScanResponse.Builder builder = ScanResponse.newBuilder();
+    HRegion region = null;
+    OperationQuota quota = null;
     try {
       if (request.hasScannerId()) {
         // The downstream projects such as AsyncHBase in OpenTSDB need this value. See HBASE-18000
         // for more details.
+        // The downstream projects such as AsyncHBase in OpenTSDB need this value. See HBASE-18000
+        // for more details.
         builder.setScannerId(request.getScannerId());
         rsh = getRegionScanner(request);
+        region = rsh.r;
+        quota = this.getQuotaInfo(region, OperationQuota.OperationType.SCAN);
       } else {
-        rsh = newRegionScanner(request, builder);
+        region = getRegion(request.getRegion());
+        quota = this.getQuotaInfo(region, OperationQuota.OperationType.SCAN);
+        rsh = newRegionScanner(region, request, builder);
+        region = rsh.r;
       }
     } catch (IOException e) {
       if (e == SCANNER_ALREADY_CLOSED) {
@@ -3244,7 +3253,7 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       }
       throw new ServiceException(e);
     }
-    HRegion region = rsh.r;
+
     String scannerName = rsh.scannerName;
     Leases.Lease lease;
     try {
@@ -3264,23 +3273,7 @@ public class RSRpcServices implements HBaseRPCErrorHandler,
       }
       return builder.build();
     }
-    OperationQuota quota = null;
-    try {
-      quota = this.getQuotaInfo(region, OperationQuota.OperationType.SCAN);
-    } catch (IOException e) {
-      addScannerLeaseBack(lease);
 
-      if(e instanceof RpcThrottlingException) {
-        boolean canRequestRequeue =
-                this.canRequestRequeueOnQuotaLimit(region, "ScanRequest");
-        if(canRequestRequeue) {
-          QuotaRequeueException rqe =
-                  new QuotaRequeueException("ScanRequest Quota exceed on table: " + region.getTableDescriptor().getTableName().getNameAsString());
-          throw new ServiceException(rqe);
-        }
-      }
-      throw new ServiceException(e);
-    }
     try {
       checkScanNextCallSeq(request, rsh);
     } catch (OutOfOrderScannerNextException e) {
