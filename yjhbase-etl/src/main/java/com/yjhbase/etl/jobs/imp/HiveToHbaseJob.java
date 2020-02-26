@@ -6,20 +6,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.RegionLocator;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.HFileOutputFormat2;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hbase.tool.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.spark.HashPartitioner;
+import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.sql.Row;
@@ -85,6 +86,11 @@ public class HiveToHbaseJob extends AbstractImpJob {
         job.setMapOutputValueClass(KeyValue.class);
         HFileOutputFormat2.configureIncrementalLoad(job, connection.getTable(tn), connection.getRegionLocator(tn));
 
+        byte[][] startKeys = connection.getRegionLocator(tn).getStartKeys();
+        for(byte[] startKey : startKeys) {
+            System.out.println("startKey = " + (startKey == null ? "nullKey" : Bytes.toString(startKey)));
+        }
+
         JavaPairRDD<ImmutableBytesWritable, KeyValue> hfileRdd =
                 sparkSession.sql(this.hql).javaRDD()
                         .flatMapToPair(new PairFlatMapFunction<Row, ImmutableBytesWritable, KeyValue>() {
@@ -127,27 +133,23 @@ public class HiveToHbaseJob extends AbstractImpJob {
                                 }
                                 return retKVs.iterator();
                             }
-                        }).sortByKey();
-        //        Configuration hadoopConf = sparkSession.sparkContext().hadoopConfiguration();
-//        hadoopConf.set("fs.defaultFS", "hdfs://hbasedfs");
-//        hadoopConf.set("dfs.nameservices", "hbasedfs");
-//        hadoopConf.set("dfs.ha.namenodes.hbasedfs", "nn1,nn2");
-//        hadoopConf.set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.113.196:9000");
-//        hadoopConf.set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.112.140:9000");
-//        hadoopConf.set("dfs.client.failover.proxy.provider.hbasedfs",
-//                "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
-//        this.configurationHBaseHdfs(sparkSession.sparkContext().hadoopConfiguration());
+                        }).repartitionAndSortWithinPartitions(new HBasePartitioner(connection.getRegionLocator(tn).getStartKeys()));
+        sparkSession.sparkContext().hadoopConfiguration().set("fs.defaultFS", "hdfs://hbasedfs");
+        sparkSession.sparkContext().hadoopConfiguration().set("dfs.nameservices", "hbasedfs");
+        sparkSession.sparkContext().hadoopConfiguration().set("dfs.ha.namenodes.hbasedfs", "nn1,nn2");
+        sparkSession.sparkContext().hadoopConfiguration().set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.113.196:9000");
+        sparkSession.sparkContext().hadoopConfiguration().set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.112.140:9000");
+        sparkSession.sparkContext().hadoopConfiguration().set("dfs.client.failover.proxy.provider.hbasedfs",
+                "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
 
-//        System.out.println("dfs.defaultFS.x: " + sparkSession.sparkContext().conf().get("dfs.defaultFS"));
-//        System.out.println("dfs.nameservices.x: " + sparkSession.sparkContext().conf().get("dfs.nameservices"));
-//        System.out.println("dfs.defaultFS: " + sparkSession.sparkContext().hadoopConfiguration().get("dfs.defaultFS"));
-//        System.out.println("dfs.nameservices: " + sparkSession.sparkContext().hadoopConfiguration().get("dfs.nameservices"));
-
-        String hfilePath = "hdfs://nameservice1/etl/imp/t_items";
+        String hfilePath = "hdfs://hbasedfs/etl/imp/t_items";
         hfileRdd.saveAsNewAPIHadoopFile(
                 hfilePath,
                 ImmutableBytesWritable.class, KeyValue.class,
                 HFileOutputFormat2.class, job.getConfiguration());
+
+        LoadIncrementalHFiles loader = new LoadIncrementalHFiles(conf);
+        loader.doBulkLoad(new Path(hfilePath), connection.getAdmin(), connection.getTable(tn), connection.getRegionLocator(tn));
     }
 
     private void configurationHBaseHdfs(Configuration conf) {
