@@ -10,8 +10,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.ClusterConnection;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.YjConnectionImplementation;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.HFileOutputFormat2;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
@@ -38,7 +40,7 @@ public class ConsumerItemsHiveTableToHbaseJob extends AbstractImpJob {
     private static  final Log LOG = LogFactory.getLog(ConsumerItemsHiveTableToHbaseJob.class);
     static {
         System.setProperty("HADOOP_USER_NAME" , "hdfs");
-        AbstractImpJob.jvmHost();
+        jvmHost();
     }
     String hql = "select consumerId, itemsId from tmp.tmp_t_consumer_items";
 
@@ -58,6 +60,7 @@ public class ConsumerItemsHiveTableToHbaseJob extends AbstractImpJob {
         conf.set("hbase.zookeeper.quorum" , AbstractImpJob.hbaseZookeeper);
         conf.set("zookeeper.znode.parent" , AbstractImpJob.hbaseZnode);
         conf.set(TableOutputFormat.OUTPUT_TABLE, jobOption.getHbaseTablename());
+        conf.set(ClusterConnection.HBASE_CLIENT_CONNECTION_IMPL, YjConnectionImplementation.class.getName());
         TableName tn = TableName.valueOf(jobOption.getHbaseTablename());
         Connection connection = ConnectionFactory.createConnection(conf);
         Job job = Job.getInstance(conf);
