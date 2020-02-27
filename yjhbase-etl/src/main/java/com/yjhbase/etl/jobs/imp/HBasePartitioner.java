@@ -15,10 +15,17 @@ import java.util.List;
  **/
 public class HBasePartitioner extends Partitioner {
 
-    Integer numRegions;
+    Integer numRegions, hfilesPerRegion, totalHFiles;
     List<Pair<byte[], byte[]>> regions = new ArrayList<>();
+    static Integer DEFAULT_hfilesPerRegionMax = 5;
 
     public HBasePartitioner(byte[][] startKeys){
+        this(startKeys, 1);
+    }
+
+    public HBasePartitioner(byte[][] startKeys, int hfilesPerRegion){
+        this.hfilesPerRegion = hfilesPerRegion > 1 ?
+                Math.min(hfilesPerRegion, DEFAULT_hfilesPerRegionMax) : 1;
         if(startKeys == null || startKeys.length == 0) {
             this.numRegions = 1;
             this.regions.add(new Pair<>(null, null));
@@ -29,16 +36,21 @@ public class HBasePartitioner extends Partitioner {
             }
             this.regions.add(new Pair<>(startKeys[startKeys.length - 1].length == 0 ? null : startKeys[startKeys.length - 1], null));
         }
+        this.totalHFiles = this.numRegions * this.hfilesPerRegion;
     }
 
     @Override
     public int numPartitions() {
-        return this.numRegions;
+        return this.totalHFiles;
     }
 
     @Override
     public int getPartition(Object key) {
-        ImmutableBytesWritable writable = (ImmutableBytesWritable) key;
+        int regionId = this.getRegion((ImmutableBytesWritable) key);
+        return regionId * this.hfilesPerRegion + (key.hashCode() & Integer.MAX_VALUE) % this.hfilesPerRegion;
+    }
+
+    public int getRegion(ImmutableBytesWritable writable) {
         byte[] rkBytes = writable.get();
         int i = 0, j = this.numRegions - 1;
         while(i <= j) {
