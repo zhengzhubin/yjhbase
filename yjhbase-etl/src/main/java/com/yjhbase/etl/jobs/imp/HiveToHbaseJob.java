@@ -112,13 +112,13 @@ public class HiveToHbaseJob extends AbstractImpJob {
         confx.set("fs.defaultFS", "hdfs://nameservice1");
         confx.set("dfs.nameservices", "hbasedfs,nameservice1");
         confx.set("dfs.ha.namenodes.nameservice1", "nn1,nn2");
-        confx.set("dfs.namenode.rpc-address.nameservice1.nn1", "TXIDC63-bigdata-hadoop-namenode1:8020");
-        confx.set("dfs.namenode.rpc-address.nameservice1.nn2", "TXIDC64-bigdata-hadoop-namenode2:8020");
+        confx.set("dfs.namenode.rpc-address.nameservice1.nn1", "TXIDC63-namenode1:8020");
+        confx.set("dfs.namenode.rpc-address.nameservice1.nn2", "TXIDC64-namenode2:8020");
         confx.set("dfs.client.failover.proxy.provider.nameservice1",
                 "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
         confx.set("dfs.ha.namenodes.hbasedfs", "nn1,nn2");
-        confx.set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.113.196:9000");
-        confx.set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.112.140:9000");
+        confx.set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.xx.xx:9000");
+        confx.set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.xx.xx:9000");
         confx.set("dfs.client.failover.proxy.provider.hbasedfs",
                 "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
         String hfilePath = "hdfs://hbasedfs/etl/imp/t_items";
