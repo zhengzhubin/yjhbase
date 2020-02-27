@@ -13,9 +13,7 @@ public class HiveToHbaseJobOption extends ImpJobOption {
 
     String hbaseTablename;
 
-    String hbaseZookeeper;
-
-    String hbaseZnode;
+    String outHBaseHdfsPath;
 
     public String getHiveTablename() {
         return hiveTablename;
@@ -33,19 +31,11 @@ public class HiveToHbaseJobOption extends ImpJobOption {
         this.hbaseTablename = hbaseTablename;
     }
 
-    public String getHbaseZookeeper() {
-        return hbaseZookeeper;
+    public String getOutHBaseHdfsPath() {
+        return this.outHBaseHdfsPath;
     }
 
-    public void setHbaseZookeeper(String hbaseZookeeper) {
-        this.hbaseZookeeper = hbaseZookeeper;
-    }
-
-    public String getHbaseZnode() {
-        return hbaseZnode;
-    }
-
-    public void setHbaseZnode(String hbaseZnode) {
-        this.hbaseZnode = hbaseZnode;
+    public void setOutHBaseHdfsPath(String outHBaseHdfsPath) {
+        this.outHBaseHdfsPath = outHBaseHdfsPath;
     }
 }

@@ -36,43 +36,28 @@ public class HiveToHbaseJob extends AbstractImpJob {
 
     static {
         System.setProperty("HADOOP_USER_NAME" , "hdfs");
-        jvmHost(); //ip & hostname
+        AbstractImpJob.jvmHost();
     }
 
-//    Configuration conf;
     String hql =
             "select item_id, item_name, item_brandname, cname1 " +
                     "from dw.dw_item_info_d where stat_day = '20200221' ";
 
-    public HiveToHbaseJob(ImpJobOption jobOption) {
-        super(jobOption);
-    }
-
-//    HiveToHbaseJobOption option = null;
-
     @Override
-    public void prepare(){
-//        this.option = (HiveToHbaseJobOption) this.getJobOption();
-//        System.out.println("optionInfo: " + JSONObject.toJSONString(this.option == null ? new HashMap<>() : this.option));
-    }
-
-    @Override
-    public void run() throws Exception{
+    public void run(ImpJobOption option) throws Exception {
+        HiveToHbaseJobOption jobOption = (HiveToHbaseJobOption) option;
         SparkSession sparkSession = SparkSession.builder()
                 .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-//                .config("hbase.zookeeper.quorum", zookeeper)
-//                .config("zookeeper.znode.parent", "/yjhbase")
                 .appName("hbaseImpJob_hiveToHbase_" + (System.currentTimeMillis() / 1000))
 //                .master("local")
                 .enableHiveSupport()
                 .getOrCreate();
 
         Configuration conf = HBaseConfiguration.create();
-        String zookeeper = "10.0.113.217:2181,10.0.114.255:2181,10.0.112.202:2181";
-        conf.set("hbase.zookeeper.quorum" , zookeeper);
-        conf.set("zookeeper.znode.parent" , "/yjhbase");
-        conf.set(TableOutputFormat.OUTPUT_TABLE, "t_items");
-        TableName tn = TableName.valueOf("t_items");
+        conf.set("hbase.zookeeper.quorum" , AbstractImpJob.hbaseZookeeper);
+        conf.set("zookeeper.znode.parent" , AbstractImpJob.hbaseZnode);
+        conf.set(TableOutputFormat.OUTPUT_TABLE, jobOption.getHbaseTablename());
+        TableName tn = TableName.valueOf(jobOption.getHbaseTablename());
         Connection connection = ConnectionFactory.createConnection(conf);
         Job job = Job.getInstance(conf);
         job.setMapOutputKeyClass(ImmutableBytesWritable.class);
@@ -80,12 +65,6 @@ public class HiveToHbaseJob extends AbstractImpJob {
         HFileOutputFormat2.configureIncrementalLoad(job, connection.getTable(tn), connection.getRegionLocator(tn));
 
         Configuration confx = job.getConfiguration();
-
-        byte[][] startKeys = connection.getRegionLocator(tn).getStartKeys();
-        for(byte[] startKey : startKeys) {
-            System.out.println("startKey = " + (startKey == null ? "nullKey" : Bytes.toString(startKey)));
-        }
-
         JavaPairRDD<ImmutableBytesWritable, KeyValue> hfileRdd =
                 sparkSession.sql(this.hql).javaRDD()
                         .flatMapToPair(new PairFlatMapFunction<Row, ImmutableBytesWritable, KeyValue>() {
@@ -129,13 +108,7 @@ public class HiveToHbaseJob extends AbstractImpJob {
                                 return retKVs.iterator();
                             }
                         }).repartitionAndSortWithinPartitions(new HBasePartitioner(connection.getRegionLocator(tn).getStartKeys()));
-//        sparkSession.sparkContext().hadoopConfiguration().set("fs.defaultFS", "hdfs://hbasedfs");
-//        sparkSession.sparkContext().hadoopConfiguration().set("dfs.nameservices", "hbasedfs");
-//        sparkSession.sparkContext().hadoopConfiguration().set("dfs.ha.namenodes.hbasedfs", "nn1,nn2");
-//        sparkSession.sparkContext().hadoopConfiguration().set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.113.196:9000");
-//        sparkSession.sparkContext().hadoopConfiguration().set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.112.140:9000");
-//        sparkSession.sparkContext().hadoopConfiguration().set("dfs.client.failover.proxy.provider.hbasedfs",
-//                "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
+
         confx.set("fs.defaultFS", "hdfs://nameservice1");
         confx.set("dfs.nameservices", "hbasedfs,nameservice1");
         confx.set("dfs.ha.namenodes.nameservice1", "nn1,nn2");
@@ -158,60 +131,11 @@ public class HiveToHbaseJob extends AbstractImpJob {
         loader.doBulkLoad(new Path(hfilePath), connection.getAdmin(), connection.getTable(tn), connection.getRegionLocator(tn));
     }
 
-    private void configurationHBaseHdfs(Configuration conf) {
-        conf.set("dfs.nameservices", "hbasedfs,nameservice1");
-        conf.set("dfs.ha.namenodes.nameservice1", "nn1,nn2");
-        conf.set("dfs.namenode.rpc-address.nameservice1.nn1", "TXIDC63-bigdata-hadoop-namenode1:8020");
-        conf.set("dfs.namenode.rpc-address.nameservice1.nn2", "TXIDC64-bigdata-hadoop-namenode2:8020");
-        conf.set("dfs.client.failover.proxy.provider.nameservice1",
-                "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
-        conf.set("dfs.ha.namenodes.hbasedfs", "nn1,nn2");
-        conf.set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.113.196:9000");
-        conf.set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.112.140:9000");
-        conf.set("dfs.client.failover.proxy.provider.hbasedfs",
-                "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
-    }
-
     public static void main(String... args) throws Exception {
-        HiveToHbaseJobOption op = new HiveToHbaseJobOption();
-        op.setHbaseTablename("t_items");
-        op.setHbaseZookeeper("10.0.113.217:2181,10.0.114.255:2181,10.0.112.202:2181");
-        op.setHbaseZnode("yjhbase");
+        HiveToHbaseJobOption option = new HiveToHbaseJobOption();
+        option.setHbaseTablename("t_items");
 
-        HiveToHbaseJob job = new HiveToHbaseJob(op);
-        job.run();
-    }
-
-
-    private static void jvmHost() {
-        String[] kuduNodes = new String[] {
-                "10.0.112.140,TXIDC-kudumaidian-cluster5",
-                "10.0.113.196,TXIDC-kudumaidian-cluster4",
-                "10.0.112.202,TXIDC-kudumaidian-cluster3",
-                "10.0.114.255,TXIDC-kudumaidian-cluster2",
-                "10.0.113.217,txidc-kudumaidian-cluster1",
-                "10.0.40.220,TXIDC417-bigdata-kudu-10",
-                "10.0.40.167,TXIDC416-bigdata-kudu-9",
-                "10.0.40.207,TXIDC415-bigdata-kudu-8",
-                "10.0.40.189,TXIDC414-bigdata-kudu-7",
-                "10.0.40.236,TXIDC413-bigdata-kudu-6",
-                "10.0.40.248,TXIDC412-bigdata-kudu-5",
-                "10.0.40.234,TXIDC411-bigdata-kudu-4",
-                "10.0.40.215,TXIDC410-bigdata-kudu-3",
-                "10.0.40.158,TXIDC409-bigdata-kudu-2",
-                "10.0.40.240,TXIDC408-bigdata-kudu-1"
-        };
-
-
-        Properties virtualDns = new Properties();
-        for(String node: kuduNodes) {
-            String hostname = node.split(",")[1];
-            String ip = node.split(",")[0];
-            virtualDns.put(hostname, ip);
-            if(!hostname.equals(hostname.toLowerCase())) {
-                virtualDns.put(hostname.toLowerCase(), ip);
-            }
-        }
-        JavaHost.updateVirtualDns(virtualDns);
+        HiveToHbaseJob job = new HiveToHbaseJob();
+        job.run(option);
     }
 }
