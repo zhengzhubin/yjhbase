@@ -15,7 +15,7 @@ public abstract class AbstractImpJob implements Serializable {
 
     static String PARAM_YJHBASE_REGION_HFILES_NUMBER = "yjhbase.region.hfiles.number";
 
-    static String hbaseZookeeper = "10.0.113.217:2181,10.0.114.255:2181,10.0.112.202:2181";
+    static String hbaseZookeeper = "10.0.xx.xxx:2181,10.0.xx.xxx:2181,10.0.xx.xxx:2181";
     static String hbaseZnode = "/yjhbase";
 
     public AbstractImpJob(){
