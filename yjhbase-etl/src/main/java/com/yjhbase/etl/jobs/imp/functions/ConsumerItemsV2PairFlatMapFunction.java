@@ -18,45 +18,38 @@ import java.util.*;
  * @description
  **/
 public class ConsumerItemsV2PairFlatMapFunction
-        implements PairFlatMapFunction<Row, ImmutableBytesWritable, Put> {
+        implements PairFlatMapFunction<Row, ImmutableBytesWritable, KeyValue> {
 
     int itemsPerPage = 100;
     Random random = new Random();
 
     @Override
-    public Iterator<Tuple2<ImmutableBytesWritable, Put>> call(Row row) throws Exception {
+    public Iterator<Tuple2<ImmutableBytesWritable, KeyValue>> call(Row row) throws Exception {
         String consumerId = SparkRowUtil.getStringCell(row, "consumerId");
 
         List<Integer> items = this.itemsList();
         int len = items.size();
         int pages = (len - 1) / itemsPerPage + 1;
-        List<Tuple2<ImmutableBytesWritable, Put>> retPuts = new ArrayList<>();
+        List<Tuple2<ImmutableBytesWritable, KeyValue>> retKvs = new ArrayList<>();
         for(int i = 0; i<= pages; i ++) {
             String rkString = rowkey(consumerId, i);
             List<Integer> valueList = this.pageItems(items, len, i);
             byte[] rkBytes = Bytes.toBytes(rkString);
-            ImmutableBytesWritable rkWritable = new ImmutableBytesWritable(rkBytes);
-            Put put = new Put(rkBytes);
-            put.addColumn(Bytes.toBytes("f"), Bytes.toBytes("consumerId"), Bytes.toBytes(consumerId));
-            put.addColumn(Bytes.toBytes("f"), Bytes.toBytes("itemsId"), Bytes.toBytes(JSONObject.toJSONString(valueList)));
+//            ImmutableBytesWritable rkWritable = new ImmutableBytesWritable(rkBytes);
+            retKvs.add(new Tuple2<>(new ImmutableBytesWritable(Bytes.toBytes(rkString + " f:c")),
+                    new KeyValue(rkBytes, Bytes.toBytes("f"), Bytes.toBytes("consumerId"),
+                            Bytes.toBytes(consumerId))));
+            String itemsId = JSONObject.toJSONString(valueList);
+            retKvs.add(new Tuple2<>(new ImmutableBytesWritable(Bytes.toBytes(rkString + " f:i")),
+                    new KeyValue(rkBytes, Bytes.toBytes("f"), Bytes.toBytes("itemsId"),
+                            Bytes.toBytes(itemsId))));
             if(i == 1) {
-                put.addColumn(Bytes.toBytes("f"), Bytes.toBytes("pages"), Bytes.toBytes(pages + ""));
+                retKvs.add(new Tuple2<>(new ImmutableBytesWritable(Bytes.toBytes(rkString + " f:p")),
+                        new KeyValue(rkBytes, Bytes.toBytes("f"), Bytes.toBytes("pages"),
+                                Bytes.toBytes(pages + ""))));
             }
-            retPuts.add(new Tuple2<>(rkWritable, put));
-
-//            retKVs.add(new Tuple2<>(new ImmutableBytesWritable(Bytes.toBytes(rkString + "::f:consumerId")),
-//                    new KeyValue(rkBytes, )));
-//            retKVs.add(new Tuple2<>(new ImmutableBytesWritable(Bytes.toBytes(rkString + "::f:itemsId")),
-//                    new KeyValue(rkBytes, )));
-//            if(i == 1) {
-//                //在第一页记录总页数
-//                retKVs.add(new Tuple2<>(new ImmutableBytesWritable(Bytes.toBytes(rkString + "::f:pages")),
-//                        new KeyValue(rkBytes,
-//                                Bytes.toBytes("f"), Bytes.toBytes("pages"), Bytes.toBytes(pages + "")))
-//                );
-//            }
         }
-        return retPuts.iterator();
+        return retKvs.iterator();
     }
 
 
@@ -66,9 +59,9 @@ public class ConsumerItemsV2PairFlatMapFunction
     }
 
     private List<Integer> itemsList() {
-//        200:0~15 500:16~23 1000:24~27 3000: 28~29 10000:30
-        int p = Math.abs(random.nextInt(31)) % 31;
-        int len = p < 16 ? 200 : (p < 24 ? 500 : (p < 28 ? 1000 : (p < 30 ? 3000 : 10000)));
+//        500:0~15 1000:16~23 2000:24~27 3000: 28~29 10000:30
+        int p = Math.abs(random.nextInt(5)) % 5;
+        int len = p < 1 ? 500 : (p < 2 ? 1000 : (p < 3 ? 2000 : (p < 4 ? 3000 : 9000)));
         List<Integer> retItems = new ArrayList<>();
         for(int i = 0; i < len; i ++) {
             retItems.add(500000 + this.random.nextInt(500000));
@@ -78,6 +71,6 @@ public class ConsumerItemsV2PairFlatMapFunction
 
     private static String rowkey(String value, int pageId) {
         int code = (value.hashCode() & Integer.MAX_VALUE) % 1000;
-        return String.format("%03d::%s", code, value) + "::" + pageId;
+        return String.format("%03d::%s::%02d", code, value, pageId);
     }
 }

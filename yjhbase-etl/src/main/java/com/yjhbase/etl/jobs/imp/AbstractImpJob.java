@@ -46,7 +46,7 @@ public abstract class AbstractImpJob implements Serializable {
     }
 
     //hbase host & ip
-    static void jvmHost() {
+    public static void jvmHost() {
         String[] kuduNodes = new String[] {
                 "10.0.112.140,TXIDC-kudumaidian-cluster5",
                 "10.0.113.196,TXIDC-kudumaidian-cluster4",

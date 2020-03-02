@@ -17,6 +17,8 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.sql.SparkSession;
 
+import java.util.Comparator;
+
 /**
  * @author zhengzhubin
  * @date 2020/2/24
@@ -51,7 +53,7 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
         Connection connection = ConnectionFactory.createConnection(conf);
         Job job = Job.getInstance(conf);
         job.setMapOutputKeyClass(ImmutableBytesWritable.class);
-        job.setMapOutputValueClass(Put.class);
+        job.setMapOutputValueClass(KeyValue.class);
         HFileOutputFormat2.configureIncrementalLoad(job, connection.getTable(tn), connection.getRegionLocator(tn));
 
         Integer hfilesPerRegion =
@@ -59,12 +61,13 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
                         .getInt(PARAM_YJHBASE_REGION_HFILES_NUMBER, 1);
         Configuration confx = AbstractImpJob.hdfsConfiguration(job.getConfiguration());
 
-        JavaPairRDD<ImmutableBytesWritable, Put> hfileRdd =
+        JavaPairRDD<ImmutableBytesWritable, KeyValue> hfileRdd =
                 sparkSession.sql(this.hql).javaRDD()
                         .repartition(100) //temp param
                         .flatMapToPair(new ConsumerItemsV2PairFlatMapFunction())
                         .repartitionAndSortWithinPartitions(
                                 new HBasePartitioner(connection.getRegionLocator(tn).getStartKeys(), hfilesPerRegion)
+//                                , new ImmutableBytesWritableComparator()
                         );
 
         String hfilePath =
@@ -72,7 +75,7 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
                         AbstractImpJob.defaultOutHBaseHdfsPath(jobOption.getHbaseTablename()) : jobOption.getOutHBaseHdfsPath();
         hfileRdd.saveAsNewAPIHadoopFile(
                 hfilePath,
-                ImmutableBytesWritable.class, Put.class,
+                ImmutableBytesWritable.class, KeyValue.class,
                 HFileOutputFormat2.class, confx);
 
         LoadIncrementalHFiles loader = new LoadIncrementalHFiles(conf);
