@@ -1,6 +1,9 @@
 package com.yjhbase.etl.jobs.imp;
 
+import com.yjhbase.etl.dto.RkColumn;
+
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author zhengzhubin
@@ -9,19 +12,19 @@ import java.io.Serializable;
  **/
 public class HiveToHbaseJobOption extends ImpJobOption {
 
-    String hiveTablename;
+    String sparkSql;
 
     String hbaseTablename;
 
+    String hbaseColumnfamily;
+
     String outHBaseHdfsPath;
 
-    public String getHiveTablename() {
-        return hiveTablename;
-    }
+    List<RkColumn> rkColumns;
 
-    public void setHiveTablename(String hiveTablename) {
-        this.hiveTablename = hiveTablename;
-    }
+    String rkSplitKey = "::";
+
+    Integer numberOfFilesPerRegion = 1;
 
     public String getHbaseTablename() {
         return hbaseTablename;
@@ -37,5 +40,45 @@ public class HiveToHbaseJobOption extends ImpJobOption {
 
     public void setOutHBaseHdfsPath(String outHBaseHdfsPath) {
         this.outHBaseHdfsPath = outHBaseHdfsPath;
+    }
+
+    public String getSparkSql() {
+        return sparkSql;
+    }
+
+    public void setSparkSql(String sparkSql) {
+        this.sparkSql = sparkSql;
+    }
+
+    public String getHbaseColumnfamily() {
+        return hbaseColumnfamily;
+    }
+
+    public void setHbaseColumnfamily(String hbaseColumnfamily) {
+        this.hbaseColumnfamily = hbaseColumnfamily;
+    }
+
+    public List<RkColumn> getRkColumns() {
+        return rkColumns;
+    }
+
+    public void setRkColumns(List<RkColumn> rkColumns) {
+        this.rkColumns = rkColumns;
+    }
+
+    public String getRkSplitKey() {
+        return rkSplitKey == null ? "::" : rkSplitKey;
+    }
+
+    public void setRkSplitKey(String rkSplitKey) {
+        this.rkSplitKey = rkSplitKey;
+    }
+
+    public Integer getNumberOfFilesPerRegion() {
+        return numberOfFilesPerRegion == null ? 1 : numberOfFilesPerRegion;
+    }
+
+    public void setNumberOfFilesPerRegion(Integer numberOfFilesPerRegion) {
+        this.numberOfFilesPerRegion = numberOfFilesPerRegion;
     }
 }

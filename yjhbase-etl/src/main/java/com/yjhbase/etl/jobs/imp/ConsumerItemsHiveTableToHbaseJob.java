@@ -45,9 +45,9 @@ public class ConsumerItemsHiveTableToHbaseJob extends AbstractImpJob {
     String hql = "select consumerId, itemsId from tmp.tmp_t_consumer_items";
 
     @Override
-    public void run(ImpJobOption option) throws Exception{
-        HiveToHbaseJobOption jobOption = (HiveToHbaseJobOption) option;
+    public void run() throws Exception{}
 
+    public void run(HiveToHbaseJobOption jobOption) throws Exception{
         SparkSession sparkSession = SparkSession.builder()
                 .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                 .config(PARAM_YJHBASE_REGION_HFILES_NUMBER, 3)

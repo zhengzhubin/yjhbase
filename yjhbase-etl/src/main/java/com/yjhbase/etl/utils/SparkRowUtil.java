@@ -24,6 +24,15 @@ public class SparkRowUtil {
         return r.get(i) == null;
     }
 
+    public static Object getObjectCell(Row r, int i) {
+        if(isNullCell(r, i)) return null;
+        return r.get(i);
+    }
+
+    public static Object getObjectCell(Row r, String field) {
+        return getObjectCell(r, fieldIndex(r, field));
+    }
+
     public static String getStringCell(Row r, String field){
         return getStringCell(r , fieldIndex(r, field));
     }

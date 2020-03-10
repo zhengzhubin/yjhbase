@@ -17,8 +17,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.sql.SparkSession;
 
-import java.util.Comparator;
-
 /**
  * @author zhengzhubin
  * @date 2020/2/24
@@ -33,12 +31,14 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
     String hql = "select consumerId from tmp.tmp_t_consumers";
 
     @Override
-    public void run(ImpJobOption option) throws Exception{
-        HiveToHbaseJobOption jobOption = (HiveToHbaseJobOption) option;
+    public void run() throws Exception {
 
+    }
+    public void run(HiveToHbaseJobOption jobOption) throws Exception {
         SparkSession sparkSession = SparkSession.builder()
                 .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-                .config(PARAM_YJHBASE_REGION_HFILES_NUMBER, 5)
+//                .config("spark.dynamicAllocation.enabled", false)
+                .config(PARAM_YJHBASE_REGION_HFILES_NUMBER, 10)
                 .appName("hiveTohbaseJob_consumerItems_" + (System.currentTimeMillis() / 1000))
 //                .master("local")
                 .enableHiveSupport()
@@ -63,7 +63,7 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
 
         JavaPairRDD<ImmutableBytesWritable, KeyValue> hfileRdd =
                 sparkSession.sql(this.hql).javaRDD()
-                        .repartition(100) //temp param
+                        .repartition(400) //temp param
                         .flatMapToPair(new ConsumerItemsV2PairFlatMapFunction())
                         .repartitionAndSortWithinPartitions(
                                 new HBasePartitioner(connection.getRegionLocator(tn).getStartKeys(), hfilesPerRegion)
@@ -77,6 +77,14 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
                 hfilePath,
                 ImmutableBytesWritable.class, KeyValue.class,
                 HFileOutputFormat2.class, confx);
+
+        /**
+         * bulkload 客户端需要加上如下环境变量：
+         * export HADOOP_HOME=/xxx/xxx/xxx
+         * export JAVA_LIBRARY_PATH=$JAVA_LIBRARY_PATH:$HADOOP_HOME/lib/native
+         * export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native
+         * export SPARK_YARN_USER_ENV="JAVA_LIBRARY_PATH=$JAVA_LIBRARY_PATH,LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+         */
 
         LoadIncrementalHFiles loader = new LoadIncrementalHFiles(conf);
         loader.doBulkLoad(new Path(hfilePath), connection.getAdmin(), connection.getTable(tn), connection.getRegionLocator(tn));
