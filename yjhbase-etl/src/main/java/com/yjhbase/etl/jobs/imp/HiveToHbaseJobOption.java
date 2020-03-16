@@ -26,6 +26,16 @@ public class HiveToHbaseJobOption extends ImpJobOption {
 
     Integer numberOfFilesPerRegion = 1;
 
+    Integer numExecutors;
+
+    Integer numExecutorCores;
+
+    Integer gbOfExecutorMemory;
+
+    Integer numDriverCores;
+
+    Integer gbOfDriverMemory;
+
     public String getHbaseTablename() {
         return hbaseTablename;
     }
@@ -80,5 +90,45 @@ public class HiveToHbaseJobOption extends ImpJobOption {
 
     public void setNumberOfFilesPerRegion(Integer numberOfFilesPerRegion) {
         this.numberOfFilesPerRegion = numberOfFilesPerRegion;
+    }
+
+    public Integer getNumExecutors() {
+        return numExecutors;
+    }
+
+    public void setNumExecutors(Integer numExecutors) {
+        this.numExecutors = numExecutors;
+    }
+
+    public Integer getNumExecutorCores() {
+        return numExecutorCores;
+    }
+
+    public void setNumExecutorCores(Integer numExecutorCores) {
+        this.numExecutorCores = numExecutorCores;
+    }
+
+    public Integer getGbOfExecutorMemory() {
+        return gbOfExecutorMemory;
+    }
+
+    public void setGbOfExecutorMemory(Integer gbOfExecutorMemory) {
+        this.gbOfExecutorMemory = gbOfExecutorMemory;
+    }
+
+    public Integer getNumDriverCores() {
+        return numDriverCores;
+    }
+
+    public void setNumDriverCores(Integer numDriverCores) {
+        this.numDriverCores = numDriverCores;
+    }
+
+    public Integer getGbOfDriverMemory() {
+        return gbOfDriverMemory;
+    }
+
+    public void setGbOfDriverMemory(Integer gbOfDriverMemory) {
+        this.gbOfDriverMemory = gbOfDriverMemory;
     }
 }

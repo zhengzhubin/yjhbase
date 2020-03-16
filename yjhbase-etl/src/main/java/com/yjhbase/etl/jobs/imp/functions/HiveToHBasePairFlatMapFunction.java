@@ -81,8 +81,7 @@ public class HiveToHBasePairFlatMapFunction implements PairFlatMapFunction<Row, 
         this.buildColumnsMap(row);
         Map<String, String> columnsDataMap = new HashMap<>();
         for(SparkColumn column : this.columnsList) {
-            Object value = SparkRowUtil.getObjectCell(row, column.getName());
-            String strValue = this.parse(column, value);
+            String strValue = this.getColumnValue(column, row);
             if(strValue == null) continue;
             columnsDataMap.put(column.getLowerCaseName(), strValue);
         }
@@ -125,18 +124,21 @@ public class HiveToHBasePairFlatMapFunction implements PairFlatMapFunction<Row, 
     }
 
     /**
-     * 数据格式转换
+     * 获取列值，并转换为字符串
      * @param column
-     * @param value
+     * @param r
      * @return
      */
-    private String parse(SparkColumn column, Object value) {
-        if(value == null) return null;
-        if(column.getDataType() instanceof ArrayType ||
-                column.getDataType() instanceof MapType) {
-            return JSONObject.toJSONString(value);
+    private String getColumnValue(SparkColumn column, Row r) {
+        if(column.getDataType() instanceof ArrayType) {
+            List<Object> listValue = SparkRowUtil.getListCell(r, column.getName());
+            return listValue == null ? null : JSONObject.toJSONString(listValue);
+        } else if (column.getDataType() instanceof MapType) {
+            Map<String, Object> mapValue = SparkRowUtil.getMapCell(r, column.getName());
+            return mapValue == null ? null : JSONObject.toJSONString(mapValue);
         } else {
-            return value + "";
+            Object objValue = SparkRowUtil.getObjectCell(r, column.getName());
+            return objValue == null ? null : (objValue + "");
         }
     }
 }

@@ -90,6 +90,16 @@ public class SparkRowUtil {
         return value;
     }
 
+    public static <T> Map<String, T> getMapCell(Row r, String field){
+        return getMapCell(r , fieldIndex(r , field));
+    }
+
+    public static <T> Map<String, T> getMapCell(Row r, int i){
+        if(isNullCell(r , i)) return null;
+        Map<String, T> value = r.getJavaMap(i);
+        return value;
+    }
+
     public static void putIfNotNull(Map<String, Object> map, String key, Object value){
         if(value == null) return;
 

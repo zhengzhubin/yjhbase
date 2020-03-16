@@ -47,57 +47,41 @@ public class HiveToHbaseJob extends AbstractImpJob {
     private static  final Log LOG = LogFactory.getLog(HiveToHbaseJob.class);
 
     private static final String ETL_JOBS_HDFS_ROOTDIR = "/etl/hbase/jobs/";
-    private static final String PARAM_SPARK_ETL_JOBID = "spark.etl.hbase.hive.jobid";
+    private static final Long DEFAULT_SPLIT_MINSIZE = 512L * 1024 * 1024; //512mb
+//    private static final String PARAM_SPARK_ETL_JOBID = "spark.etl.hbase.hive.jobid";
+    private String jobId;
 
     static {
         System.setProperty("HADOOP_USER_NAME" , "hdfs");
         AbstractImpJob.jvmHost();
     }
 
+    public HiveToHbaseJob(String jobId){
+        this.jobId = jobId;
+    }
+
     @Override
     public void run() throws Exception {
-        SparkSession sparkSession = SparkSession.builder()
-                .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-                .config(FileInputFormat.SPLIT_MINSIZE, 512L * 1024 * 1024) //512mb
-                .appName("etl_hiveTohbase_" + (System.currentTimeMillis() / 1000))
+
+        HiveToHbaseJobOption jobOption = this.buildJobOptionInfo(this.jobId);
+
+        SparkSession.Builder builder = SparkSession.builder();
+        builder.config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+                .config("spark.dynamicAllocation.enabled", false)
+//                .config("spark.dynamicAllocation.minExecutors", 2)
+//                .config("spark.dynamicAllocation.maxExecutors", 8)
+                .config(FileInputFormat.SPLIT_MINSIZE, DEFAULT_SPLIT_MINSIZE)
+                .config("spark.driver.cores", jobOption.getNumDriverCores())
+                .config("spark.driver.memory", jobOption.getGbOfDriverMemory() + "g")
+                .config("spark.executor.instances", jobOption.getNumExecutors())
+                .config("spark.executor.memory", jobOption.getGbOfExecutorMemory() + "g")
+                .config("spark.executor.cores", jobOption.getNumExecutorCores());
+
+        SparkSession sparkSession =
+                builder.appName("etl_hiveTohbase_" + (System.currentTimeMillis() / 1000))
 //                .master("local")
-                .enableHiveSupport()
-                .getOrCreate();
-//        String jobId = sparkSession.conf().get(PARAM_SPARK_ETL_JOBID);
-//        System.out.println("jobId: " + jobId);
-        String path = ETL_JOBS_HDFS_ROOTDIR + sparkSession.conf().get(PARAM_SPARK_ETL_JOBID);
-        HiveToHbaseJobOption jobOption = new HiveToHbaseJobOption();
-        Properties properties = this.propsFromHdfs(path);
-        jobOption.setSparkSql(properties.getProperty("query"));
-        jobOption.setHbaseTablename(properties.getProperty("hbase_name"));
-        jobOption.setHbaseColumnfamily(properties.getProperty("col_family"));
-        jobOption.setNumberOfFilesPerRegion(Integer.parseInt(properties.getProperty("hfile_nums", "1").trim()));
-        jobOption.setOutHBaseHdfsPath(AbstractImpJob.defaultOutHBaseHdfsPath(jobOption.getHbaseTablename()));
-        Map<String, Object> rkColumnsMap =
-                JSONObject.parseObject(properties.getProperty("row_key"), new HashMap<String, Object>().getClass());
-        List<? extends HashMap> rkColumnsList =
-                JSONObject.parseArray(
-                        JSONObject.toJSONString(rkColumnsMap.get("row_key")),
-                        new HashMap<String, Object>().getClass()
-                );
-        List<RkColumn> rkColumns = new ArrayList<>();
-        for(Map kv : rkColumnsList) {
-            RkColumn rkColumn = new RkColumn();
-            rkColumn.setName((kv.get("col_name") + ""));
-            rkColumn.hashkeyOrNot(Integer.parseInt(kv.get("is_hash") + ""));
-            rkColumn.setPriority(Integer.parseInt(kv.get("prio") + ""));
-            rkColumns.add(rkColumn);
-        }
-        rkColumns.sort(new Comparator<RkColumn>() {
-            @Override
-            public int compare(RkColumn o1, RkColumn o2) {
-                if(o1.getPriority() == o2.getPriority())
-                    return o1.getName().compareTo(o2.getName());
-                return o1.getPriority() > o2.getPriority() ? 1 : -1;
-            }
-        });
-        jobOption.setRkColumns(rkColumns);
-        System.out.println("jobOption.info: " + JSONObject.toJSON(jobOption));
+                        .enableHiveSupport()
+                        .getOrCreate();
 
         Configuration conf = HBaseConfiguration.create();
         conf.set(HConstants.ZOOKEEPER_QUORUM , AbstractImpJob.hbaseZookeeper);
@@ -139,6 +123,68 @@ public class HiveToHbaseJob extends AbstractImpJob {
         loader.doBulkLoad(new Path(hfilePath), connection.getAdmin(), connection.getTable(tn), connection.getRegionLocator(tn));
     }
 
+    /**
+     * job 详情
+     * @param jobId
+     * @return
+     * @throws IOException
+     */
+    private HiveToHbaseJobOption buildJobOptionInfo(String jobId) throws IOException {
+        String path = ETL_JOBS_HDFS_ROOTDIR + jobId;
+        HiveToHbaseJobOption jobOption = new HiveToHbaseJobOption();
+        Properties properties = this.propsFromHdfs(path);
+        jobOption.setSparkSql(properties.getProperty("query"));
+        jobOption.setHbaseTablename(properties.getProperty("hbase_name"));
+        jobOption.setHbaseColumnfamily(properties.getProperty("col_family"));
+        jobOption.setNumberOfFilesPerRegion(Integer.parseInt(properties.getProperty("hfile_nums", "1").trim()));
+        jobOption.setOutHBaseHdfsPath(AbstractImpJob.defaultOutHBaseHdfsPath(jobOption.getHbaseTablename()));
+        Map<String, Object> rkColumnsMap =
+                JSONObject.parseObject(properties.getProperty("row_key"), new HashMap<String, Object>().getClass());
+        List<? extends HashMap> rkColumnsList =
+                JSONObject.parseArray(
+                        JSONObject.toJSONString(rkColumnsMap.get("row_key")),
+                        new HashMap<String, Object>().getClass()
+                );
+        List<RkColumn> rkColumns = new ArrayList<>();
+        for(Map kv : rkColumnsList) {
+            RkColumn rkColumn = new RkColumn();
+            rkColumn.setName((kv.get("col_name") + ""));
+            rkColumn.hashkeyOrNot(Integer.parseInt(kv.get("is_hash") + ""));
+            rkColumn.setPriority(Integer.parseInt(kv.get("prio") + ""));
+            rkColumns.add(rkColumn);
+        }
+        rkColumns.sort(new Comparator<RkColumn>() {
+            @Override
+            public int compare(RkColumn o1, RkColumn o2) {
+                if(o1.getPriority() == o2.getPriority())
+                    return o1.getName().compareTo(o2.getName());
+                return o1.getPriority() > o2.getPriority() ? 1 : -1;
+            }
+        });
+        jobOption.setRkColumns(rkColumns);
+        jobOption.setNumDriverCores(
+                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_driver_cores", "1")), 1, 4)
+        );
+        jobOption.setGbOfDriverMemory(
+                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_driver_memory", "2")), 1, 8)
+        );
+        jobOption.setNumExecutors(
+                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_num_executor", "2")), 2, 8)
+        );
+        jobOption.setNumExecutorCores(
+                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_executor_cores", "2")), 1, 4)
+        );
+        jobOption.setGbOfExecutorMemory(
+                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_executor_memory", "8")), 1, 16)
+        );
+        System.out.println("jobOption.info: " + JSONObject.toJSON(jobOption));
+        return jobOption;
+    }
+
+    private int intParamValueLimit(Integer v, Integer min, Integer max) {
+        return Math.max(min, Math.min(max, v));
+    }
+
     private Properties propsFromHdfs(String path) throws IOException {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.newInstance(conf);
@@ -152,7 +198,7 @@ public class HiveToHbaseJob extends AbstractImpJob {
     }
 
     public static void main(String... args) throws Exception {
-        HiveToHbaseJob job = new HiveToHbaseJob();
+        HiveToHbaseJob job = new HiveToHbaseJob(args[0].trim());
         job.run();
     }
 }
