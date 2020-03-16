@@ -36,6 +36,8 @@ public class HiveToHBasePairFlatMapFunction implements PairFlatMapFunction<Row, 
 
     byte[] cfBytes = null;
 
+    byte[] closestNextRowEndByte = null;
+
     public HiveToHBasePairFlatMapFunction() {}
 
     public HiveToHBasePairFlatMapFunction(HiveToHbaseJobOption jobOption) {
@@ -62,6 +64,10 @@ public class HiveToHBasePairFlatMapFunction implements PairFlatMapFunction<Row, 
                 return o1.getLowerCaseName().compareTo(o2.getLowerCaseName());
             }
         });
+
+        closestNextRowEndByte = new byte[1];
+        closestNextRowEndByte[0] = 0;
+
         for(RkColumn rkColumn : this.jobOption.getRkColumns()) {
             boolean flag = false;
             for(SparkColumn c : this.columnsList) {
@@ -87,7 +93,7 @@ public class HiveToHBasePairFlatMapFunction implements PairFlatMapFunction<Row, 
         }
         String rkString = HBaseRowkeyUtil.getRowkey(columnsDataMap, this.jobOption.getRkColumns(), this.jobOption.getRkSplitKey());
         byte[] rkBytes = Bytes.toBytes(rkString);
-        byte[] nextRkBytes = ClientUtil.calculateTheClosestNextRowKeyForPrefix(rkBytes);
+        byte[] nextRkBytes = calculateTheClosestNextRowKeyForPrefix(rkBytes);
         List<Tuple2<ImmutableBytesWritable, KeyValue>> retKvs =  new ArrayList<>();
         int cId = 0;
         for(SparkColumn c : this.columnsList) {
@@ -100,6 +106,15 @@ public class HiveToHBasePairFlatMapFunction implements PairFlatMapFunction<Row, 
             cId ++;
         }
         return retKvs.iterator();
+    }
+
+    /**
+     *
+     * @param bytes
+     * @return
+     */
+    byte[] calculateTheClosestNextRowKeyForPrefix(byte[] bytes){
+        return bytesMerged(bytes, closestNextRowEndByte);
     }
 
     /**
