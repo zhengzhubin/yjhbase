@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.yjhbase.etl.dto.RkColumn;
 import com.yjhbase.etl.jobs.imp.functions.ConsumerItemsV2PairFlatMapFunction;
 import com.yjhbase.etl.jobs.imp.functions.HiveToHBasePairFlatMapFunction;
+import com.yjhbase.etl.utils.ParseCommand;
 import io.leopard.javahost.JavaHost;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -49,21 +50,17 @@ public class HiveToHbaseJob extends AbstractImpJob {
     private static final String ETL_JOBS_HDFS_ROOTDIR = "/etl/hbase/jobs/";
     private static final Long DEFAULT_SPLIT_MINSIZE = 512L * 1024 * 1024; //512mb
 //    private static final String PARAM_SPARK_ETL_JOBID = "spark.etl.hbase.hive.jobid";
-    private String jobId;
+//    private String jobId;
 
     static {
         System.setProperty("HADOOP_USER_NAME" , "hdfs");
         AbstractImpJob.jvmHost();
     }
 
-    public HiveToHbaseJob(String jobId){
-        this.jobId = jobId;
-    }
-
     @Override
-    public void run() throws Exception {
+    public void run(String... args) throws Exception {
 
-        HiveToHbaseJobOption jobOption = this.buildJobOptionInfo(this.jobId);
+        HiveToHbaseJobOption jobOption = this.buildJobOptionInfo(args);
 
         SparkSession.Builder builder = SparkSession.builder();
         builder.config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -125,15 +122,15 @@ public class HiveToHbaseJob extends AbstractImpJob {
 
     /**
      * job 详情
-     * @param jobId
+     * @param args
      * @return
      * @throws IOException
      */
-    private HiveToHbaseJobOption buildJobOptionInfo(String jobId) throws IOException {
-        String path = ETL_JOBS_HDFS_ROOTDIR + jobId;
+    private HiveToHbaseJobOption buildJobOptionInfo(String... args) throws IOException {
+        String path = ETL_JOBS_HDFS_ROOTDIR + args[0];
         HiveToHbaseJobOption jobOption = new HiveToHbaseJobOption();
         Properties properties = this.propsFromHdfs(path);
-        jobOption.setSparkSql(properties.getProperty("query"));
+        jobOption.setSparkSql(this.parseSqlDynamicParams(properties.getProperty("query")));
         jobOption.setHbaseTablename(properties.getProperty("hbase_name"));
         jobOption.setHbaseColumnfamily(properties.getProperty("col_family"));
         jobOption.setNumberOfFilesPerRegion(Integer.parseInt(properties.getProperty("hfile_nums", "1").trim()));
@@ -169,7 +166,7 @@ public class HiveToHbaseJob extends AbstractImpJob {
                 this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_driver_memory", "2")), 1, 8)
         );
         jobOption.setNumExecutors(
-                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_num_executor", "2")), 2, 8)
+                this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_num_executor", "2")), 2, 10)
         );
         jobOption.setNumExecutorCores(
                 this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_executor_cores", "2")), 1, 4)
@@ -179,6 +176,24 @@ public class HiveToHbaseJob extends AbstractImpJob {
         );
         System.out.println("jobOption.info: " + JSONObject.toJSON(jobOption));
         return jobOption;
+    }
+
+    /**
+     * sql 动参解析
+     * @param sql
+     * @param args
+     * @return
+     */
+    private String parseSqlDynamicParams(String sql, String... args) {
+        if(args == null || args.length < 2) return sql;
+        Map<String, String> params = new HashMap<>();
+        int len = args.length;
+        for(int i = 1; i < len; i++) {
+            String key = args[i].split("=")[0].trim();
+            String value = args[i].split("=")[1].trim();
+            params.put(key, value);
+        }
+        return ParseCommand.parseCommand(sql, params);
     }
 
     private int intParamValueLimit(Integer v, Integer min, Integer max) {
@@ -198,7 +213,7 @@ public class HiveToHbaseJob extends AbstractImpJob {
     }
 
     public static void main(String... args) throws Exception {
-        HiveToHbaseJob job = new HiveToHbaseJob(args[0].trim());
-        job.run();
+        HiveToHbaseJob job = new HiveToHbaseJob();
+        job.run(args);
     }
 }

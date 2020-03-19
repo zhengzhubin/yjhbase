@@ -21,7 +21,7 @@ public abstract class AbstractImpJob implements Serializable {
     public AbstractImpJob(){
     }
 
-    public abstract  void run() throws Exception;
+    public abstract  void run(String... args) throws Exception;
 
     static String defaultOutHBaseHdfsPath(String hbaseTablename) {
         return "hdfs://hbasedfs/etl/imp/" +

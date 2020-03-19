@@ -2,6 +2,8 @@ package com.yjhbase.etl.utils;
 
 import com.yjhbase.etl.dto.RkColumn;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,5 +36,23 @@ public class HBaseRowkeyUtil {
         if(hashString == null) return retString;
         int code = (hashString.hashCode() & Integer.MAX_VALUE) % 1000;
         return String.format("%03d%s%s", code, splitKey, retString);
+    }
+
+    public static void main(String[] args) {
+        Map<String, String> columnsDataMap = new HashMap<>();
+        columnsDataMap.put("tab_id", "102");
+        columnsDataMap.put("consumer_id", "20129474");
+
+        List<RkColumn> rkColumns = new ArrayList<>();
+        RkColumn k1 = new RkColumn();
+        k1.setName("tab_id");
+        k1.setUseHash(true);
+        RkColumn k2 = new RkColumn();
+        k2.setName("consumer_id");
+        k2.setUseHash(true);
+        rkColumns.add(k1);
+        rkColumns.add(k2);
+
+        System.out.println(getRowkey(columnsDataMap, rkColumns, "::"));
     }
 }

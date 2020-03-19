@@ -45,7 +45,7 @@ public class ConsumerItemsHiveTableToHbaseJob extends AbstractImpJob {
     String hql = "select consumerId, itemsId from tmp.tmp_t_consumer_items";
 
     @Override
-    public void run() throws Exception{}
+    public void run(String... args) throws Exception{}
 
     public void run(HiveToHbaseJobOption jobOption) throws Exception{
         SparkSession sparkSession = SparkSession.builder()

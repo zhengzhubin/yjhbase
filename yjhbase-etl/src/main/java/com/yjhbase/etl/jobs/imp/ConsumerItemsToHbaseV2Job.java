@@ -31,7 +31,7 @@ public class ConsumerItemsToHbaseV2Job extends AbstractImpJob {
     String hql = "select consumerId from tmp.tmp_t_consumers";
 
     @Override
-    public void run() throws Exception {
+    public void run(String... args) throws Exception {
 
     }
     public void run(HiveToHbaseJobOption jobOption) throws Exception {
