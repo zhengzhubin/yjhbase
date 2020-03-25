@@ -17,13 +17,17 @@ public class YjHBaseClientMonitorUtil {
     private static Logger LOG = LoggerFactory.getLogger(YjHBaseClientMonitorUtil.class);
 
     private static long requests = 0L, successRequests = 0L, failedRequests = 0L;
+    private static long timeoutButReturnResultRequests = 0L;
 
     private static Map<String, Long> successRequestsRpcTookInMillisMap = new HashMap<>();
     private static Map<String, Long> successRequestsWaitInMillisMap = new HashMap<>();
     private static Map<String, Long> failedRequestsWaitInMillisMap = new HashMap<>();
 
-    public static synchronized void incrRequest() {
+    public static synchronized void incrRequest(int timeLimitInMillis) {
         requests ++;
+        if(requests % 1000 == 1) {
+            LOG.info("HBase 请求耗时情况[requestsCount]: requests = " + requests + ", timeLimitInMillis = " + timeLimitInMillis);
+        }
     }
 
     /**
@@ -46,6 +50,14 @@ public class YjHBaseClientMonitorUtil {
             println("successRequestsWaitInMillisMap", successRequestsWaitInMillisMap, successRequests);
             println("successRequestsRpcTookInMillisMap", successRequestsRpcTookInMillisMap, successRequests);
         }
+    }
+
+    public static synchronized void incrTimeoutButReturnResultRequests(int timeLimitInMillis, long rpcTookTimeInMillis){
+//        if(timeLimitInMillis <= 0 || timeLimitInMillis >= rpcTookTimeInMillis) return ;
+        timeoutButReturnResultRequests ++;
+        LOG.warn("HBase 请求耗时情况[timeoutButReturnResult]: " +
+                "totalTimeoutButReturnResultRequests = " + timeoutButReturnResultRequests +
+                ", timeLimitInMillis = " + timeLimitInMillis + ", rpcTookTimeInMillis" + rpcTookTimeInMillis);
     }
 
     /**

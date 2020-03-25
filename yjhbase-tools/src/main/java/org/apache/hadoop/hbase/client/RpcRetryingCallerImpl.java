@@ -109,12 +109,16 @@ public class RpcRetryingCallerImpl<T> implements RpcRetryingCaller<T> {
                 callable.prepare(tries != 0);
                 interceptor.intercept(context.prepare(callable, tries));
                 if(tries == 0) {
-                    YjHBaseClientMonitorUtil.incrRequest();
                     try {
-                        T retObject = callable.call(getTimeout(callTimeout));
+                        int remainingTime = getTimeout(callTimeout);
+                        YjHBaseClientMonitorUtil.incrRequest(remainingTime);
+                        T retObject = callable.call(remainingTime);
                         if(retObject instanceof Result) {
                             long rpcTookTimeInMillis = EnvironmentEdgeManager.currentTime() - calledTimeInMillis;
                             YjHBaseClientMonitorUtil.incrSuccessRequest(waitTimeInMillis, rpcTookTimeInMillis);
+                            if(remainingTime > 0 && rpcTookTimeInMillis > remainingTime) {
+                                YjHBaseClientMonitorUtil.incrTimeoutButReturnResultRequests(remainingTime, rpcTookTimeInMillis);
+                            }
                         }
                         return retObject;
                     } catch (Throwable t) {
