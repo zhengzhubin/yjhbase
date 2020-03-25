@@ -98,13 +98,32 @@ public class RpcRetryingCallerImpl<T> implements RpcRetryingCaller<T> {
         List<RetriesExhaustedException.ThrowableWithExtraContext> exceptions = new ArrayList<>();
         tracker.start();
         context.clear();
+        // 任务被执行时时间戳
+        long calledTimeInMillis = EnvironmentEdgeManager.currentTime();
+        // 任务在队列等待时间戳
+        long waitTimeInMillis = calledTimeInMillis - tracker.getStartTime();
         for (int tries = 0;; tries++) {
             long expectedSleep;
             try {
                 // bad cache entries are cleared in the call to RetryingCallable#throwable() in catch block
                 callable.prepare(tries != 0);
                 interceptor.intercept(context.prepare(callable, tries));
-                return callable.call(getTimeout(callTimeout));
+                if(tries == 0) {
+                    YjHBaseClientMonitorUtil.incrRequest();
+                    try {
+                        T retObject = callable.call(getTimeout(callTimeout));
+                        if(retObject instanceof Result) {
+                            long rpcTookTimeInMillis = EnvironmentEdgeManager.currentTime() - calledTimeInMillis;
+                            YjHBaseClientMonitorUtil.incrSuccessRequest(waitTimeInMillis, rpcTookTimeInMillis);
+                        }
+                        return retObject;
+                    } catch (Throwable t) {
+                        YjHBaseClientMonitorUtil.incrFailedRequest(waitTimeInMillis);
+                        throw t;
+                    }
+                } else {
+                    return callable.call(getTimeout(callTimeout));
+                }
             } catch (PreemptiveFastFailException e) {
                 throw e;
             } catch (Throwable t) {
