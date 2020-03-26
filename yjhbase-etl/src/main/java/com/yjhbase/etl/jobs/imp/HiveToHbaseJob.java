@@ -130,7 +130,7 @@ public class HiveToHbaseJob extends AbstractImpJob {
         String path = ETL_JOBS_HDFS_ROOTDIR + args[0];
         HiveToHbaseJobOption jobOption = new HiveToHbaseJobOption();
         Properties properties = this.propsFromHdfs(path);
-        jobOption.setSparkSql(this.parseSqlDynamicParams(properties.getProperty("query")));
+        jobOption.setSparkSql(this.parseSqlDynamicParams(properties.getProperty("query"), args));
         jobOption.setHbaseTablename(properties.getProperty("hbase_name"));
         jobOption.setHbaseColumnfamily(properties.getProperty("col_family"));
         jobOption.setNumberOfFilesPerRegion(Integer.parseInt(properties.getProperty("hfile_nums", "1").trim()));
@@ -175,6 +175,9 @@ public class HiveToHbaseJob extends AbstractImpJob {
                 this.intParamValueLimit(Integer.parseInt(properties.getProperty("spark_executor_memory", "8")), 1, 16)
         );
         System.out.println("jobOption.info: " + JSONObject.toJSON(jobOption));
+        System.out.println("args.info: " + JSONObject.toJSON(args));
+        LOG.info("args: " + JSONObject.toJSON(args));
+        LOG.info("jobOption.info: " + JSONObject.toJSON(jobOption));
         return jobOption;
     }
 
