@@ -12,7 +12,14 @@
     <artifactId>yjhbase-server</artifactId>
 
     <dependencies>
-        <!-- -->
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
@@ -29,7 +36,41 @@
             <artifactId>hbase-client</artifactId>
             <version>2.1.7</version>
             <scope>provided</scope>
+            <!--
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-metrics</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-metrics-api</artifactId>
+                </exclusion>
+            </exclusions>
+             -->
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-hadoop2-compat</artifactId>
+            <version>2.1.8</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-metrics</artifactId>
+            <version>2.1.8</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-metrics-api</artifactId>
+            <version>2.1.8</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.hbase.thirdparty</groupId>
             <artifactId>hbase-shaded-protobuf</artifactId>
@@ -41,42 +82,22 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-protocol-shaded</artifactId>
             <version>2.1.8</version>
-            <scope>system</scope>
-            <systemPath>d:/tools/maven_3_5_4/outlibs/hbase/hbase-protocol-shaded-2.1.8.jar</systemPath>
+            <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-zookeeper</artifactId>
             <version>2.1.7</version>
+            <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-http</artifactId>
-            <version>2.1.7</version>
+            <version>2.1.8</version>
             <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.codehaus.jackson</groupId>
-                    <artifactId>jackson-core-asl</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
-
-
-        <!--
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-server</artifactId>
-            <version>2.1.7</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.avro</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
-
 
     </dependencies>
 
@@ -106,6 +127,11 @@
                             <artifactSet>
                                 <includes>
                                     <include>org.apache.hbase:hbase-server</include>
+                                    <include>org.apache.hbase:hbase-hadoop2-compat</include>
+                                    <!--
+                                    <include>org.apache.hbase:hbase-metrics</include>
+                                    <include>org.apache.hbase:hbase-metrics-api</include>
+                                    -->
                                 </includes>
                             </artifactSet>
                         </configuration>

@@ -263,8 +263,8 @@ public class DynamicMetricsRegistry {
      * @return A new MutableTimeHistogram
      */
     public MutableTimeHistogram newTimeHistogram(String name, String desc) {
-        MutableTimeHistogram histo = new MutableTimeHistogram(name, desc);
-        return addNewMetricIfAbsent(name, histo, MutableTimeHistogram.class);
+        YjMutableTimeHistogram histo = new YjMutableTimeHistogram(name, desc);
+        return addNewMetricIfAbsent(name, histo, YjMutableTimeHistogram.class);
     }
 
     /**
