@@ -339,7 +339,7 @@ public class HBaseRsMonitorServiceImpl implements HBaseRsMonitorService {
                 for(HBaseRsRegionMetrics region : regions.values()) {
                     tableMetrics.storeFileSize += region.getStoreFileSize();
                     tableMetrics.storeFileCount += region.getStoreFileCount();
-                    if(region.getStoreFileSize() / (1024 * 1024) > serverConfig.getGbOfRegionSizeLimit()){
+                    if(region.getStoreFileSize() / (1024 * 1024 * 1024) > serverConfig.getGbOfRegionSizeLimit()){
                         tableMetrics.tooBigRegionCount += 1;
                     }
                     if(region.getStoreFileCount() > serverConfig.getNumberOfRegionHfilesLimit()){
