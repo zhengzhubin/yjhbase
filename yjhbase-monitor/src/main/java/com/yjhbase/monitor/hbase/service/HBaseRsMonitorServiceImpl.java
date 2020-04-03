@@ -45,6 +45,7 @@ public class HBaseRsMonitorServiceImpl implements HBaseRsMonitorService {
         samplesList.add(statusMetric(rsListMetrics));
         samplesList.add(jvmMetrics(rsListMetrics));
         samplesList.add(ipcMetrics(rsListMetrics));
+        samplesList.add(tablesMetrics(rsListMetrics));
 
         TextFormat.write004(writer, samplesList);
         this.updateShopshot(rsListMetrics);
@@ -147,17 +148,17 @@ public class HBaseRsMonitorServiceImpl implements HBaseRsMonitorService {
             Sample numOpenConnections = this.getNodeSample(familySamples.name,
                     nodeMetrics.getIp(),"numOpenConnections", ipcMetrics.getNumOpenConnections());
             Sample numCallsInWriteQueue = this.getNodeSample(familySamples.name,
-                    nodeMetrics.getIp(),"numCallsInWriteQueue", ipcMetrics.getNumOpenConnections());
+                    nodeMetrics.getIp(),"numCallsInWriteQueue", ipcMetrics.getNumCallsInWriteQueue());
             Sample numCallsInReadQueue = this.getNodeSample(familySamples.name,
-                    nodeMetrics.getIp(),"numCallsInReadQueue", ipcMetrics.getNumOpenConnections());
+                    nodeMetrics.getIp(),"numCallsInReadQueue", ipcMetrics.getNumCallsInReadQueue());
             Sample numCallsInScanQueue = this.getNodeSample(familySamples.name,
-                    nodeMetrics.getIp(),"numCallsInScanQueue", ipcMetrics.getNumOpenConnections());
+                    nodeMetrics.getIp(),"numCallsInScanQueue", ipcMetrics.getNumCallsInScanQueue());
             Sample numActiveWriteHandler = this.getNodeSample(familySamples.name,
-                    nodeMetrics.getIp(),"numActiveWriteHandler", ipcMetrics.getNumOpenConnections());
+                    nodeMetrics.getIp(),"numActiveWriteHandler", ipcMetrics.getNumActiveWriteHandler());
             Sample numActiveReadHandler = this.getNodeSample(familySamples.name,
-                    nodeMetrics.getIp(),"numActiveReadHandler", ipcMetrics.getNumOpenConnections());
+                    nodeMetrics.getIp(),"numActiveReadHandler", ipcMetrics.getNumActiveReadHandler());
             Sample numActiveScanHandler = this.getNodeSample(familySamples.name,
-                    nodeMetrics.getIp(),"numActiveScanHandler", ipcMetrics.getNumOpenConnections());
+                    nodeMetrics.getIp(),"numActiveScanHandler", ipcMetrics.getNumActiveScanHandler());
             familySamples.addSample(numOpenConnections)
                     .addSample(numCallsInWriteQueue)
                     .addSample(numCallsInReadQueue)
@@ -389,7 +390,7 @@ public class HBaseRsMonitorServiceImpl implements HBaseRsMonitorService {
         }
 
         Long getStoreFileSizeGB() {
-            return this.storeFileSize / (1024* 1024);
+            return this.storeFileSize / (1024L * 1024 * 1024);
         }
 
     }
