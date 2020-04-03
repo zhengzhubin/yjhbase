@@ -4,6 +4,9 @@ import com.yjhbase.monitor.common.ServerConfig;
 import com.yjhbase.monitor.common.StatusEnum;
 import com.yjhbase.monitor.metrics.BaseMetric;
 import com.yjhbase.monitor.metrics.ZkStateMetric;
+import com.yjhbase.monitor.prometheus.MetricFamilySamples;
+import com.yjhbase.monitor.prometheus.Sample;
+import com.yjhbase.monitor.prometheus.TextFormat;
 import org.apache.zookeeper.client.FourLetterWordMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +34,6 @@ public class ZookeeperMonitorServiceImpl implements ZookeeperMonitorService {
     ServerConfig serverConfig;
 
     List<ServerConfig.ServerNode> zkNodes = null;
-    List<ZkStateMetric> zkNodesStateMetric = new ArrayList<>();
 
     @PostConstruct
     public void prepare() {
@@ -38,52 +41,59 @@ public class ZookeeperMonitorServiceImpl implements ZookeeperMonitorService {
     }
 
     @Override
-    public List<ZkStateMetric> getZkNodesStateMetric() {
-        synchronized (this.zkNodes) {
-            return BaseMetric.copy(this.zkNodesStateMetric);
-        }
+    public synchronized void buildZookeepersMonitorInfoWithPrometheusFormat(Writer writer) throws Exception{
+        List<ZkStateMetric> zkListMetrics = this.getZookeepersMonitorInfo();
+        List<MetricFamilySamples> samplesList = new ArrayList<>();
+        samplesList.add(statusMetric(zkListMetrics));
+        samplesList.add(connectionsMetric(zkListMetrics));
+        TextFormat.write004(writer, samplesList);
     }
 
-    @Scheduled(cron = "*/60 * * * * ?")
-    public void run(){
-        synchronized (this.zkNodes) {
-            this.zkNodesStateMetric = new ArrayList<>();
-            for (ServerConfig.ServerNode node : this.zkNodes) {
-                this.zkNodesStateMetric.add(this.getzkNodeState(node));
-            }
+    /**
+     * 状态信息
+     * @param zkListMetrics
+     * @return
+     */
+    private MetricFamilySamples statusMetric(List<ZkStateMetric> zkListMetrics) {
+        MetricFamilySamples familySamples =
+                MetricFamilySamples.build(ZOOKEEPER_STATUS.getKey(), ZOOKEEPER_STATUS.getValue());
+        for(ZkStateMetric zkMetrics : zkListMetrics) {
+            Sample sample = Sample.build(familySamples.name, serverConfig.getClusterId());
+            sample.addLable("nodeId", zkMetrics.getIp());
+            sample.setSampleValue(zkMetrics.getStatus().getStatusId());
+            familySamples.addSample(sample);
         }
+        return familySamples;
     }
 
-    private ZkStateMetric getzkNodeState(ServerConfig.ServerNode node) {
-        ZkStateMetric stateMetric = new ZkStateMetric(node.getIp(), node.getPort());
-        String statInfo = null;
-        try{
-            statInfo = FourLetterWordMain.send4LetterWord(node.getIp() , node.getPort() , "stat");
-        }catch (Exception e) {
-            LOG.error("监控zookeeper节点信息失败, ip = " + node.getIp(), e);
-            stateMetric.setStatus(StatusEnum.UNKNOWN);
-            return stateMetric;
+    /**
+     * 连接数信息
+     * @param zkListMetrics
+     * @return
+     */
+    private MetricFamilySamples connectionsMetric(List<ZkStateMetric> zkListMetrics) {
+        MetricFamilySamples familySamples =
+                MetricFamilySamples.build(ZOOKEEPER_CONNECTIONS.getKey(), ZOOKEEPER_CONNECTIONS.getValue());
+        for(ZkStateMetric zkMetrics : zkListMetrics) {
+            if(!zkMetrics.getStatus().equalTo(StatusEnum.ONLINE)) continue;
+            Sample sample = Sample.build(familySamples.name, serverConfig.getClusterId());
+            sample.addLable("nodeId", zkMetrics.getIp());
+            sample.setSampleValue(zkMetrics.getConnections());
+            familySamples.addSample(sample);
         }
-        if(statInfo == null) {
-            stateMetric.setStatus(StatusEnum.OFFLINE);
-            return stateMetric;
-        } else {
-            stateMetric.setStatus(StatusEnum.ONLINE);
-            try {
-                String[] lines = statInfo.split("\n");
-                for(String line: lines) {
-                    if(line.trim().startsWith("Connections: ")) {
-                        stateMetric.setConnections(Integer.parseInt(line.replace("Connections: " , "").trim()));
-                    } else if(line.trim().startsWith("Latency ")) {
-                        String[] latency = line.replace("Latency ","").split(":")[1].split("/");
-                        stateMetric.setAvgLatency(Integer.parseInt(latency[1].trim()));
-                        stateMetric.setMaxLatency(Integer.parseInt(latency[2].trim()));
-                    }
-                }
-            } catch (Exception e) {
-                LOG.error("zookeeper stat 信息解析失败,msg: " + statInfo, e);
-            }
-        }
-        return stateMetric;
+        return familySamples;
     }
+
+    /**
+     * zookeeper 监控信息
+     * @return
+     */
+    private List<ZkStateMetric> getZookeepersMonitorInfo() {
+        List<ZkStateMetric> zkListMetrics = new ArrayList<>();
+        for(ServerConfig.ServerNode node : this.zkNodes) {
+            zkListMetrics.add(ZkStateMetric.parse(node.getIp(), node.getPort()));
+        }
+        return zkListMetrics;
+    }
+
 }

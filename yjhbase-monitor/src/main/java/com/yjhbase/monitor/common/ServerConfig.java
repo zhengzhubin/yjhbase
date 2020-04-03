@@ -76,7 +76,13 @@ public class ServerConfig {
         return this.parse(this.hbaseRegionservers);
     }
 
+    public Integer getNumberOfRegionHfilesLimit() {
+        return numberOfRegionHfilesLimit;
+    }
 
+    public Integer getGbOfRegionSizeLimit() {
+        return gbOfRegionSizeLimit;
+    }
 
     private List<ServerNode> parse(String nodesStr) {
         String[] ips = nodesStr.split("/")[0].split(",");

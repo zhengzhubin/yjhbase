@@ -1,7 +1,9 @@
 package com.yjhbase.monitor.zookeeper.service;
 
+import com.yjhbase.monitor.dto.Pair;
 import com.yjhbase.monitor.metrics.ZkStateMetric;
 
+import java.io.Writer;
 import java.util.List;
 
 /**
@@ -11,10 +13,13 @@ import java.util.List;
  **/
 public interface ZookeeperMonitorService {
 
-    /**
-     * 获取zookeeper 信息
-     * @return 节点状态、连接数、延迟信息
-     */
-    List<ZkStateMetric> getZkNodesStateMetric();
+    // Pair<$metric.name, $metric.description>
+    static Pair<String, String> ZOOKEEPER_STATUS =
+            new Pair<>("zookeeperStatus", "zookeeper status metric.");
+
+    static Pair<String, String> ZOOKEEPER_CONNECTIONS =
+            new Pair<>("zookeeperConnections", "zookeeper connections metric.");
+
+    void buildZookeepersMonitorInfoWithPrometheusFormat(Writer writer) throws Exception;
 
 }

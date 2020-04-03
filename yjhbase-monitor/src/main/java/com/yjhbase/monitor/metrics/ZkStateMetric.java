@@ -1,6 +1,9 @@
 package com.yjhbase.monitor.metrics;
 
 import com.yjhbase.monitor.common.StatusEnum;
+import org.apache.zookeeper.client.FourLetterWordMain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author zhengzhubin
@@ -9,50 +12,61 @@ import com.yjhbase.monitor.common.StatusEnum;
  **/
 public class ZkStateMetric extends BaseMetric {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ZkStateMetric.class);
+
     StatusEnum status = StatusEnum.UNKNOWN;
 
     // 连接数
-    Integer connections;
+    Long connections = 0L;
 
     // 最大延迟
-    Integer maxLatency;
+    Long maxLatency = 0L;
 
     // 平均延迟
-    Integer avgLatency;
+    Long avgLatency = 0L;
 
-    public ZkStateMetric(String ip, Integer port) {
+    private ZkStateMetric(String ip, Integer port) {
         super(ip, port);
+    }
+
+    public static ZkStateMetric parse(String ip, Integer port) {
+        ZkStateMetric zkStateMetric = new ZkStateMetric(ip, port);
+        try {
+            String statInfo = FourLetterWordMain.send4LetterWord(ip, port, "stat");
+            if(statInfo == null || statInfo.length() == 0) {
+                throw new RuntimeException("invalid result, stat info is null.");
+            }
+            String[] lines = statInfo.split("\n");
+            for(String line: lines) {
+                if(line.trim().startsWith("Connections: ")) {
+                    zkStateMetric.connections = Long.parseLong(line.replace("Connections: " , "").trim());
+                } else if(line.trim().startsWith("Latency ")) {
+                    String[] latency = line.replace("Latency ","").split(":")[1].split("/");
+                    zkStateMetric.avgLatency = Long.parseLong(latency[1].trim());
+                    zkStateMetric.maxLatency = Long.parseLong(latency[2].trim());
+                }
+            }
+            zkStateMetric.status = StatusEnum.ONLINE;
+        }catch (Exception e) {
+            LOG.error("Get zookeeper state metrics faield, node.host = " + ip + ", node.port = "+ port, e);
+            zkStateMetric.status = StatusEnum.OFFLINE;
+        }
+        return zkStateMetric;
     }
 
     public StatusEnum getStatus() {
         return status;
     }
 
-    public void setStatus(StatusEnum status) {
-        this.status = status;
-    }
-
-    public Integer getConnections() {
+    public Long getConnections() {
         return connections;
     }
 
-    public void setConnections(Integer connections) {
-        this.connections = connections;
-    }
-
-    public Integer getMaxLatency() {
+    public Long getMaxLatency() {
         return maxLatency;
     }
 
-    public void setMaxLatency(Integer maxLatency) {
-        this.maxLatency = maxLatency;
-    }
-
-    public Integer getAvgLatency() {
+    public Long getAvgLatency() {
         return avgLatency;
-    }
-
-    public void setAvgLatency(Integer avgLatency) {
-        this.avgLatency = avgLatency;
     }
 }

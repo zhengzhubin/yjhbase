@@ -7,9 +7,9 @@ package com.yjhbase.monitor.common;
  **/
 public enum StatusEnum {
 
-    UNKNOWN (99, "未知"),
+    UNKNOWN (999, "未知"),
     ONLINE (0, "online"),
-    OFFLINE(1, "offline");
+    OFFLINE (1, "offline");
 
     Integer statusId;
 

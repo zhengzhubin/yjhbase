@@ -1,5 +1,9 @@
 package com.yjhbase.monitor.metrics;
 
+import com.yjhbase.monitor.utils.OkHttpUtil;
+import okhttp3.Response;
+
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +39,16 @@ public abstract class BaseMetric implements Serializable {
         this.port = port;
     }
 
-    public static <T extends BaseMetric> List<T> copy(List<T> list) {
-        if(list == null) return null;
-        List<T> retList = new ArrayList<>();
-        for(T o : list) retList.add(o);
-        return retList;
+    protected String httpRequest(String url) throws Exception {
+        Response resp = OkHttpUtil.httpGet(url);
+        if(resp.code() != 200) {
+            resp.message();
+            throw new IOException("http request failed, url: " + url + " \n " + resp.message());
+        }
+        String retString = resp.body().string();
+        try{
+            resp.close();
+        }catch (Exception e) {}
+        return retString;
     }
 }
