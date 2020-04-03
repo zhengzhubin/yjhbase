@@ -60,7 +60,7 @@ public class HBaseRsIpcMetrics extends RangeMetric {
             ipcMetrics.numCallsInScanQueue = DataUtils.longValue(dataMap, "numCallsInScanQueue", 0);
             ipcMetrics.numCallsInWriteQueue = DataUtils.longValue(dataMap, "numCallsInWriteQueue", 0);
             ipcMetrics.callsOfCalltime =
-                    ipcMetrics.getRanges(dataMap, "QueueCallTime_yjTimeRangeCount", "callsOfQueuetime", false);
+                    ipcMetrics.getRanges(dataMap, "QueueCallTime_yjTimeRangeCount", "callsOfTotaltime", false);
             ipcMetrics.callsOfProcesstime =
                     ipcMetrics.getRanges(dataMap, "ProcessCallTime_yjTimeRangeCount", "callsOfProcesstime", false);
             ipcMetrics.callsOfQueuetime =
