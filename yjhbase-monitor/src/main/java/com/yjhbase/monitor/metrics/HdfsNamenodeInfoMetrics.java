@@ -50,9 +50,9 @@ public class HdfsNamenodeInfoMetrics {
             infoMetrics.setTotalBlocks(Long.parseLong(dataMap.get("TotalBlocks") + ""));
             infoMetrics.setNumberOfMissingBlocks(Long.parseLong(dataMap.get("NumberOfMissingBlocks") + ""));
             infoMetrics.setNumberOfMissingBlocksWithReplicationFactorOne(Long.parseLong(dataMap.get("NumberOfMissingBlocksWithReplicationFactorOne") + ""));
-            List<Object> liveNodes = JSONObject.parseArray(dataMap.get("LiveNodes") + "");
+            HashMap liveNodes = JSONObject.parseObject(dataMap.get("LiveNodes") + "", HashMap.class);
             infoMetrics.setNumberOfLiveDataNodes(liveNodes.size() + 0L);
-            List<Object> deadNodes = JSONObject.parseArray(dataMap.get("DeadNodes") + "");
+            HashMap deadNodes = JSONObject.parseObject(dataMap.get("DeadNodes") + "", HashMap.class);
             infoMetrics.setNumberOfDeadDatanodes(deadNodes.size() + 0L);
             return infoMetrics;
         } catch (Exception e) {
