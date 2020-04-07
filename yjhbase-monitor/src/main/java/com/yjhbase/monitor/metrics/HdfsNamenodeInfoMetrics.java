@@ -44,7 +44,7 @@ public class HdfsNamenodeInfoMetrics {
                             HashMap.class
                     ).get(0);
             HdfsNamenodeInfoMetrics infoMetrics = new HdfsNamenodeInfoMetrics();
-            infoMetrics.setOnSafeMode((dataMap.get("Safemode") + "").length() == 0 ? true : false);
+            infoMetrics.setOnSafeMode((dataMap.get("Safemode") + "").length() == 0 ? false : true);
             infoMetrics.setPercentOfDiskRemaining(Float.parseFloat(dataMap.get("PercentRemaining") + ""));
             infoMetrics.setTotalFiles(Long.parseLong(dataMap.get("TotalFiles") + ""));
             infoMetrics.setTotalBlocks(Long.parseLong(dataMap.get("TotalBlocks") + ""));
