@@ -14,7 +14,7 @@
     <description>hbase monitor server. </description>
 
     <properties>
-        <zookeeper.version>3.4.9</zookeeper.version>
+        <zookeeper.version>3.4.14</zookeeper.version>
         <spring.boot.version>1.5.4.RELEASE</spring.boot.version>
         <springfox-swagger2.version>2.7.0</springfox-swagger2.version>
     </properties>
