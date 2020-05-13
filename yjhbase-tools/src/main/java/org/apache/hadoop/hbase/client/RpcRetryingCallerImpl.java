@@ -116,7 +116,7 @@ public class RpcRetryingCallerImpl<T> implements RpcRetryingCaller<T> {
                         if(retObject instanceof Result) {
                             long rpcTookTimeInMillis = EnvironmentEdgeManager.currentTime() - calledTimeInMillis;
                             YjHBaseClientMonitorUtil.incrSuccessRequest(waitTimeInMillis, rpcTookTimeInMillis);
-                            if(remainingTime > 0 && rpcTookTimeInMillis > remainingTime) {
+                            if(remainingTime > 5 && rpcTookTimeInMillis > (remainingTime + 10)) {
                                 YjHBaseClientMonitorUtil.incrTimeoutButReturnResultRequests(remainingTime, rpcTookTimeInMillis);
                             }
                         }

@@ -25,7 +25,7 @@ public class YjHBaseClientMonitorUtil {
 
     public static synchronized void incrRequest(int timeLimitInMillis) {
         requests ++;
-        if(requests % 1000 == 1) {
+        if(requests % 10000 == 1) {
             LOG.info("HBase 请求耗时情况[requestsCount]: requests = " + requests + ", timeLimitInMillis = " + timeLimitInMillis);
         }
     }
@@ -57,7 +57,7 @@ public class YjHBaseClientMonitorUtil {
         timeoutButReturnResultRequests ++;
         LOG.warn("HBase 请求耗时情况[timeoutButReturnResult]: " +
                 "totalTimeoutButReturnResultRequests = " + timeoutButReturnResultRequests +
-                ", timeLimitInMillis = " + timeLimitInMillis + ", rpcTookTimeInMillis" + rpcTookTimeInMillis);
+                ", timeLimitInMillis = " + timeLimitInMillis + ", rpcTookTimeInMillis = " + rpcTookTimeInMillis);
     }
 
     /**

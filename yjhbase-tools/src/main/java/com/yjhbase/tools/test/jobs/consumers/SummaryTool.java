@@ -23,12 +23,11 @@ public class SummaryTool {
     public static synchronized void requests(String consumerId){
         requests ++;
         if(requests % 10000 == 1) {
-            System.out.println("requests = " + requests + " , consuemrId = " + consumerId);
             LOG.info("requests = " + requests + ", consumerId = " + consumerId);
         }
     }
 
-    public static synchronized void success(Long spentMS) {
+    public static synchronized void success(Long spentMS, String rkString) {
         successRequests ++;
         String key = distributeId(spentMS);
         if(!spentMsDistribution.containsKey(key)) {
@@ -36,22 +35,20 @@ public class SummaryTool {
         } else {
             spentMsDistribution.put(key, spentMsDistribution.get(key) + 1);
         }
-        println();
+        println(rkString);
     }
 
 
     static  long lastMS = System.currentTimeMillis();
     //打印结果
-    private static void println() {
+    private static void println(String rkString) {
         if(System.currentTimeMillis() - lastMS < 60000 && successRequests % 10000 != 0) { // 1分钟打印1次
             return;
         }
         lastMS = System.currentTimeMillis();
-        LOG.info("success requests: " + successRequests + ", failed requests: " + failedRequests);
-        System.out.println("success requests: " + successRequests + ", failed requests: " + failedRequests);
+        LOG.info("[rowkey = "+rkString+"] success requests: " + successRequests + ", failed requests: " + failedRequests);
         for(Map.Entry<String, Long> kv: spentMsDistribution.entrySet()) {
             LOG.info(kv.getKey() + " % : " + String.format("%.2f", kv.getValue()* 100.0/ successRequests));
-            System.out.println(kv.getKey() + " % : " + String.format("%.2f", kv.getValue()* 100.0/ successRequests));
         }
     }
 
