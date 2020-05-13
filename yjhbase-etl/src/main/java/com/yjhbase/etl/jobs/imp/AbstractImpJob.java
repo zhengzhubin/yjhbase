@@ -15,7 +15,7 @@ public abstract class AbstractImpJob implements Serializable {
 
     static String PARAM_YJHBASE_REGION_HFILES_NUMBER = "yjhbase.region.hfiles.number";
 
-    static String hbaseZookeeper = "10.0.43.94:2181,10.0.43.187:2181,10.0.43.65:2181";
+    static String hbaseZookeeper = "10.0.xx.94:2181,10.0.xx.187:2181,10.0.xx.65:2181";
     static String hbaseZnode = "/yjhbase";
 
     public AbstractImpJob(){
@@ -38,8 +38,8 @@ public abstract class AbstractImpJob implements Serializable {
         confx.set("dfs.client.failover.proxy.provider.nameservice1",
                 "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
         confx.set("dfs.ha.namenodes.hbasedfs", "nn1,nn2");
-        confx.set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.43.70:9000");
-        confx.set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.43.78:9000");
+        confx.set("dfs.namenode.rpc-address.hbasedfs.nn1", "10.0.xxx.70:9000");
+        confx.set("dfs.namenode.rpc-address.hbasedfs.nn2", "10.0.xxx.78:9000");
         confx.set("dfs.client.failover.proxy.provider.hbasedfs",
                 "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider");
         return confx;
@@ -48,11 +48,11 @@ public abstract class AbstractImpJob implements Serializable {
     //hbase host & ip
     public static void jvmHost() {
         String[] kuduNodes = new String[] {
-                "10.0.43.94,txidc-bigdata-hbasekv1",
-                "10.0.43.187,txidc-bigdata-hbasekv2",
-                "10.0.43.65,txidc-bigdata-hbasekv3",
-                "10.0.43.70,txidc-bigdata-hbasekv4",
-                "10.0.43.78,txidc-bigdata-hbasekv5"
+                "10.0.xx.94,txidc-bigdata-hbasekv1",
+                "10.0.xx.187,txidc-bigdata-hbasekv2",
+                "10.0.xxx.65,txidc-bigdata-hbasekv3",
+                "10.0.xx.70,txidc-bigdata-hbasekv4",
+                "10.0.xx.78,txidc-bigdata-hbasekv5"
         };
 
 
