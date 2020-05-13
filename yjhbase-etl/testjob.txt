@@ -1,0 +1,7 @@
+/usr/local/yunji/spark/bin/spark-submit \
+--class com.yjhbase.etl.jobs.imp.HiveToHbaseJob \
+--master yarn \
+--deploy-mode cluster \
+--queue $queue_name \
+--jars /root/program/env/jars/yjhbase-etl-1.0-SNAPSHOT.jar  \
+/root/program/env/jars/yjhbase-etl-1.0-SNAPSHOT.jar $appfile day="$day" dt="$dt" hour="$hour" hm="$hm" dm="$dm"

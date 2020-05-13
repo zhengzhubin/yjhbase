@@ -17,9 +17,22 @@
         <hbase.version>2.1.7</hbase.version>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
     <modules>
         <module>yjhbase-tools</module>
         <module>yjhbase-server</module>
+        <module>yjhbase-etl</module>
+        <module>yjhbase-monitor</module>
+        <module>yjhbase-manager</module>
     </modules>
 
 

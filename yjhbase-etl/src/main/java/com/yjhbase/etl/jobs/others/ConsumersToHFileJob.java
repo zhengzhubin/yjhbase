@@ -21,7 +21,10 @@ public class ConsumersToHFileJob implements Serializable {
         System.setProperty("HADOOP_USER_NAME" , "hdfs");
     }
 
-    String hql = "select consumerId from tmp.tmp_t_consumers";
+    String hql = "select tab_id , consumer_id\n" +
+            "from dm.dm_rec_tab_u2i_recall_h \n" +
+            "where stat_day = '20200327'  and stat_hour = '11'  \n" +
+            "and version = 'new_item'";
 
     public void run() {
         SparkSession sparkSession = SparkSession.builder()
@@ -33,7 +36,7 @@ public class ConsumersToHFileJob implements Serializable {
 
         JavaRDD<String> consumersRdd =
                 sparkSession.sql(this.hql).javaRDD()
-                        .repartition(100)
+                        .repartition(20)
                         .flatMap(new ConsumersFlatMapFunction());
 
         sparkSession.sparkContext().hadoopConfiguration().set("fs.defaultFS", "hdfs://nameservice1");

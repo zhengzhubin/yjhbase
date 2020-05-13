@@ -195,7 +195,7 @@
     </dependencyManagement>
 
     <build>
-        <finalName>yjhbase-monitor</finalName>
+        <finalName>yjhbase-monitor-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
